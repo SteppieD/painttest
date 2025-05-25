@@ -43,14 +43,14 @@ export function MarkupSelector({
   const { finalPrice, profit } = calculateMarkup(baseCost, selectedMarkup)
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Select Markup</CardTitle>
+    <Card className="border-[#e5e5e7] shadow-sm">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-base font-medium text-[#1d1d1f]">Markup Selection</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
-          <Label className="text-sm text-muted-foreground">Base Cost</Label>
-          <p className="text-2xl font-bold">{formatCurrency(baseCost)}</p>
+          <Label className="text-sm text-[#8e8e93]">Base Cost</Label>
+          <p className="text-2xl font-semibold text-[#1d1d1f]">{formatCurrency(baseCost)}</p>
         </div>
 
         <div className="grid grid-cols-3 gap-2">
@@ -59,7 +59,12 @@ export function MarkupSelector({
               key={markup}
               variant={selectedMarkup === markup && !isCustom ? 'default' : 'outline'}
               onClick={() => handleMarkupSelect(markup)}
-              className="w-full"
+              className={cn(
+                'w-full',
+                selectedMarkup === markup && !isCustom
+                  ? 'bg-[#007aff] hover:bg-[#0051d5] text-white border-[#007aff]'
+                  : 'border-[#e5e5e7] hover:bg-[#f7f7f8]'
+              )}
             >
               {markup}%
             </Button>
@@ -67,7 +72,12 @@ export function MarkupSelector({
           <Button
             variant={isCustom ? 'default' : 'outline'}
             onClick={() => setIsCustom(true)}
-            className="w-full"
+            className={cn(
+              'w-full',
+              isCustom
+                ? 'bg-[#007aff] hover:bg-[#0051d5] text-white border-[#007aff]'
+                : 'border-[#e5e5e7] hover:bg-[#f7f7f8]'
+            )}
           >
             Custom
           </Button>
@@ -82,28 +92,38 @@ export function MarkupSelector({
               onChange={(e) => setCustomMarkup(e.target.value)}
               min="0"
               max="100"
+              className="border-[#e5e5e7] focus:border-[#007aff]"
             />
-            <Button onClick={handleCustomMarkup}>Apply</Button>
+            <Button 
+              onClick={handleCustomMarkup}
+              className="bg-[#007aff] hover:bg-[#0051d5]"
+            >
+              Apply
+            </Button>
           </div>
         )}
 
-        <div className="space-y-2 pt-4 border-t">
+        <div className="space-y-2 pt-4 border-t border-[#e5e5e7]">
           <div className="flex justify-between">
-            <span className="text-sm text-muted-foreground">Markup ({selectedMarkup}%)</span>
-            <span className="font-medium">{formatCurrency(finalPrice - baseCost)}</span>
+            <span className="text-sm text-[#8e8e93]">Markup ({selectedMarkup}%)</span>
+            <span className="font-medium text-[#1d1d1f]">{formatCurrency(finalPrice - baseCost)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="font-medium">Final Price</span>
-            <span className="text-xl font-bold text-primary">{formatCurrency(finalPrice)}</span>
+            <span className="font-medium text-[#1d1d1f]">Final Price</span>
+            <span className="text-xl font-semibold text-[#007aff]">{formatCurrency(finalPrice)}</span>
           </div>
           {showProfit && (
-            <div className="flex justify-between pt-2 border-t">
-              <span className="text-sm font-medium">Your Profit</span>
-              <span className="font-bold text-success">{formatCurrency(profit)}</span>
+            <div className="flex justify-between pt-2 border-t border-[#e5e5e7]">
+              <span className="text-sm font-medium text-[#1d1d1f]">Your Profit</span>
+              <span className="font-semibold text-[#34c759]">{formatCurrency(profit)}</span>
             </div>
           )}
         </div>
       </CardContent>
     </Card>
   )
+}
+
+function cn(...classes: string[]) {
+  return classes.filter(Boolean).join(' ')
 }
