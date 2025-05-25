@@ -12,7 +12,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${location.origin}/auth/callback`,
+        redirectTo: 'https://YOURSUPABASE.supabase.co/auth/v1/callback'
       },
     })
     
