@@ -2,17 +2,31 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Send, Download, Paperclip, MoreVertical } from 'lucide-react'
+import { Send, Download, Menu, Settings, LogOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useSupabase } from '@/app/providers'
 import { useToast } from '@/components/ui/use-toast'
-import { MessageBubble } from './message-bubble'
 import { MarkupSelector } from './markup-selector'
 import { PricePreview } from './price-preview'
 import { generateQuotePDF } from '@/lib/pdf-generator'
 import { calculateMarkup } from '@/lib/utils'
 import type { BaseCosts, ProjectDetails } from '@/types/database'
 import { cn } from '@/lib/utils'
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from '@/components/ui/sheet'
+import { ProjectSidebar } from './project-sidebar'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 interface ChatInterfaceProps {
   projectId: string
@@ -50,6 +64,17 @@ export function ChatInterface({ projectId, userId }: ChatInterfaceProps) {
   })
   const [selectedMarkup, setSelectedMarkup] = useState(20)
   const [showPricing, setShowPricing] = useState(false)
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
+  const [user, setUser] = useState<any>(null)
+
+  // Load user data
+  useEffect(() => {
+    const loadUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      setUser(user)
+    }
+    loadUser()
+  }, [supabase])
 
   // Initialize chat
   useEffect(() => {
@@ -106,7 +131,7 @@ export function ChatInterface({ projectId, userId }: ChatInterfaceProps) {
 
     // Auto-resize textarea
     if (inputRef.current) {
-      inputRef.current.style.height = '24px'
+      inputRef.current.style.height = '44px'
     }
 
     try {
@@ -239,129 +264,183 @@ export function ChatInterface({ projectId, userId }: ChatInterfaceProps) {
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value)
     // Auto-resize textarea
-    e.target.style.height = '24px'
+    e.target.style.height = '44px'
     e.target.style.height = `${Math.min(e.target.scrollHeight, 200)}px`
   }
 
-  return (
-    <div className="flex h-[calc(100vh-3.5rem)]">
-      {/* Chat Area */}
-      <div className="flex-1 flex flex-col bg-background">
-        {/* Chat Header */}
-        <div className="border-b px-6 py-4 flex items-center justify-between bg-background">
-          <div>
-            <h2 className="text-lg font-semibold text-foreground">
-              {conversationState.clientName || 'New Quote'}
-            </h2>
-            {conversationState.propertyAddress && (
-              <p className="text-sm text-muted-foreground">{conversationState.propertyAddress}</p>
-            )}
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-          >
-            <MoreVertical className="h-4 w-4" />
-          </Button>
-        </div>
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    router.push('/login')
+  }
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-6 py-6 scrollbar-thin">
-          <div className="max-w-4xl mx-auto space-y-6">
-            {messages.map((message) => (
-              <MessageBubble key={message.id} message={message} />
-            ))}
-            {isLoading && (
-              <div className="flex gap-3">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium text-muted-foreground">
-                  AI
+  return (
+    <div className="flex flex-col h-screen overflow-hidden">
+      {/* Header */}
+      <header className="h-14 border-b flex items-center px-4 bg-background">
+        {/* Mobile burger menu */}
+        <Sheet open={isMobileSidebarOpen} onOpenChange={setIsMobileSidebarOpen}>
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="icon" className="md:hidden">
+              <Menu className="h-5 w-5" />
+              <span className="sr-only">Toggle menu</span>
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-[80%] max-w-sm p-0">
+            <ProjectSidebar 
+              currentProjectId={currentProjectId} 
+              closeSidebar={() => setIsMobileSidebarOpen(false)}
+            />
+          </SheetContent>
+        </Sheet>
+        
+        <div className="flex-1 ml-4 md:ml-0">
+          <h1 className="text-lg font-semibold">PaintQuote Pro</h1>
+        </div>
+        
+        {/* User menu */}
+        {user && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="rounded-full">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={user.user_metadata?.avatar_url} alt={user.email} />
+                  <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                    {user.email?.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium leading-none">
+                    My Account
+                  </p>
+                  <p className="text-xs leading-none text-muted-foreground">
+                    {user.email}
+                  </p>
                 </div>
-                <div className="bg-muted rounded-lg px-4 py-3 max-w-[80%]">
-                  <div className="flex space-x-2">
-                    <div className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" />
-                    <div className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
-                    <div className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => router.push('/settings')}>
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Settings</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleSignOut}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </header>
+
+      <div className="flex flex-1 overflow-hidden">
+        {/* Main chat area */}
+        <div className="flex-1 flex flex-col bg-background">
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto py-4 px-4 md:px-8">
+            <div className="max-w-3xl mx-auto space-y-6">
+              {messages.map((message) => (
+                <div 
+                  key={message.id}
+                  className={cn(
+                    "flex",
+                    message.role === "user" ? "justify-end" : "justify-start"
+                  )}
+                >
+                  <div 
+                    className={cn(
+                      "max-w-[85%] rounded-lg px-4 py-3",
+                      message.role === "user" 
+                        ? "bg-primary text-primary-foreground ml-12" 
+                        : "bg-muted text-foreground mr-12"
+                    )}
+                  >
+                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                   </div>
                 </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
+              ))}
+              {isLoading && (
+                <div className="flex justify-start">
+                  <div className="bg-muted rounded-lg px-4 py-3 max-w-[85%] mr-12">
+                    <div className="flex space-x-2">
+                      <div className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" />
+                      <div className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
+                      <div className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
           </div>
-        </div>
 
-        {/* Input Area */}
-        <div className="border-t px-6 py-4 bg-background">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex items-end gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9"
-              >
-                <Paperclip className="h-4 w-4" />
-              </Button>
-              <div className="flex-1 relative">
+          {/* Input Area */}
+          <div className="border-t p-4 bg-background">
+            <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="max-w-3xl mx-auto">
+              <div className="relative">
                 <textarea
                   ref={inputRef}
                   value={input}
                   onChange={handleInputChange}
-                  onKeyPress={handleKeyPress}
-                  placeholder="Type a message..."
+                  onKeyDown={handleKeyPress}
+                  placeholder="Type your message..."
                   disabled={isLoading}
-                  className="w-full px-4 py-2.5 bg-muted border-0 rounded-lg resize-none text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all min-h-[44px] placeholder:text-muted-foreground"
+                  className="w-full p-3 pr-12 bg-muted border-0 rounded-lg resize-none text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all min-h-[44px] max-h-[200px] placeholder:text-muted-foreground"
                   rows={1}
                 />
+                <Button 
+                  type="submit"
+                  size="icon"
+                  className="absolute right-2 bottom-2 h-8 w-8"
+                  disabled={isLoading || !input.trim()}
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
               </div>
-              <Button
-                onClick={handleSend}
-                disabled={isLoading || !input.trim()}
-                size="icon"
-                className="h-9 w-9"
+            </form>
+          </div>
+        </div>
+
+        {/* Quote Panel */}
+        {showPricing && conversationState.baseCosts && (
+          <div className="hidden lg:block w-96 bg-muted/30 border-l p-6 space-y-6 overflow-y-auto">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Quote Details</h3>
+              <button
+                onClick={() => setShowPricing(false)}
+                className="text-muted-foreground hover:text-foreground transition-colors text-sm"
               >
-                <Send className="h-4 w-4" />
-              </Button>
+                ✕
+              </button>
             </div>
-          </div>
-        </div>
-      </div>
+            
+            <PricePreview
+              baseCost={Object.values(conversationState.baseCosts).reduce((a, b) => a + b, 0)}
+              markup={selectedMarkup}
+              breakdown={conversationState.baseCosts}
+            />
+            
+            <MarkupSelector
+              baseCost={Object.values(conversationState.baseCosts).reduce((a, b) => a + b, 0)}
+              onMarkupChange={setSelectedMarkup}
+              quickOptions={[10, 15, 20, 25, 30]}
+              showProfit={true}
+            />
 
-      {/* Quote Panel */}
-      {showPricing && conversationState.baseCosts && (
-        <div className="w-96 bg-muted/30 border-l p-6 space-y-6 overflow-y-auto">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">Quote Details</h3>
-            <button
-              onClick={() => setShowPricing(false)}
-              className="text-muted-foreground hover:text-foreground transition-colors text-sm"
+            <Button 
+              onClick={handleGenerateQuote}
+              className="w-full"
+              size="lg"
             >
-              ✕
-            </button>
+              <Download className="mr-2 h-4 w-4" />
+              Generate Quote PDF
+            </Button>
           </div>
-          
-          <PricePreview
-            baseCost={Object.values(conversationState.baseCosts).reduce((a, b) => a + b, 0)}
-            markup={selectedMarkup}
-            breakdown={conversationState.baseCosts}
-          />
-          
-          <MarkupSelector
-            baseCost={Object.values(conversationState.baseCosts).reduce((a, b) => a + b, 0)}
-            onMarkupChange={setSelectedMarkup}
-            quickOptions={[10, 15, 20, 25, 30]}
-            showProfit={true}
-          />
-
-          <Button 
-            onClick={handleGenerateQuote}
-            className="w-full"
-            size="lg"
-          >
-            <Download className="mr-2 h-4 w-4" />
-            Generate Quote PDF
-          </Button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }
