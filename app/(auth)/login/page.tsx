@@ -1,5 +1,6 @@
 'use client'
 
+// Email/password login page - updated
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -55,7 +56,7 @@ export default function LoginPage() {
 
         {/* Login Card */}
         <div className="bg-card rounded-xl shadow-subtle border p-8">
-          <h2 className="text-xl font-semibold text-center mb-6">Welcome back</h2>
+          <h2 className="text-xl font-semibold text-center mb-6">Sign In</h2>
           
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -102,7 +103,7 @@ export default function LoginPage() {
 
           <div className="mt-4 text-center">
             <p className="text-sm text-muted-foreground">
-              Don't have an account?{' '}
+              Don&apos;t have an account?{' '}
               <Link href="/quotes/signup" className="text-primary hover:underline">
                 Sign up
               </Link>
