@@ -1,51 +1,29 @@
-import { createServerClient } from '@supabase/ssr'
-import { NextResponse, type NextRequest } from 'next/server'
+import { withAuth } from 'next-auth/middleware'
+import { NextResponse } from 'next/server'
 
-export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
-    request,
-  })
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
-          supabaseResponse = NextResponse.next({
-            request,
-          })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
-        },
+export default withAuth(
+  function middleware(req) {
+    // Add any custom middleware logic here if needed
+    return NextResponse.next()
+  },
+  {
+    callbacks: {
+      authorized: ({ token, req }) => {
+        // Allow access to login page and auth routes
+        if (req.nextUrl.pathname.startsWith('/quotes/login') || 
+            req.nextUrl.pathname.startsWith('/quotes/api/auth')) {
+          return true
+        }
+        
+        // Require authentication for all other routes
+        return !!token
       },
-    }
-  )
-
-  // IMPORTANT: DO NOT REMOVE auth.getUser()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (
-    !user &&
-    !request.nextUrl.pathname.startsWith('/login') &&
-    !request.nextUrl.pathname.startsWith('/auth')
-  ) {
-    // no user, potentially respond by redirecting the user to the login page
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
+    },
+    pages: {
+      signIn: '/quotes/login',
+    },
   }
-
-  // IMPORTANT: You *must* return the supabaseResponse object as it is
-  return supabaseResponse
-}
+)
 
 export const config = {
   matcher: [
