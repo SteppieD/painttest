@@ -7,9 +7,11 @@ import { Label } from '@/components/ui/label'
 import { signIn } from 'next-auth/react'
 import Link from 'next/link'
 
-export default function LoginPage() {
+export default function SignupPage() {
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -18,18 +20,40 @@ export default function LoginPage() {
     setIsLoading(true)
     setError('')
 
+    if (password !== confirmPassword) {
+      setError('Passwords do not match')
+      setIsLoading(false)
+      return
+    }
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters')
+      setIsLoading(false)
+      return
+    }
+
     try {
-      const result = await signIn('credentials', {
-        email,
-        password,
-        callbackUrl: '/quotes/dashboard',
-        redirect: false,
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password }),
       })
 
-      if (result?.error) {
-        setError('Invalid email or password')
-      } else if (result?.url) {
-        window.location.href = result.url
+      if (response.ok) {
+        // Auto-login after successful registration
+        const result = await signIn('credentials', {
+          email,
+          password,
+          callbackUrl: '/quotes/dashboard',
+          redirect: false,
+        })
+
+        if (result?.url) {
+          window.location.href = result.url
+        }
+      } else {
+        const data = await response.json()
+        setError(data.error || 'Failed to create account')
       }
     } catch (error) {
       setError('Something went wrong. Please try again.')
@@ -53,11 +77,24 @@ export default function LoginPage() {
           <p className="text-muted-foreground">Professional painting quotes made simple</p>
         </div>
 
-        {/* Login Card */}
+        {/* Signup Card */}
         <div className="bg-card rounded-xl shadow-subtle border p-8">
-          <h2 className="text-xl font-semibold text-center mb-6">Welcome back</h2>
+          <h2 className="text-xl font-semibold text-center mb-6">Create Account</h2>
           
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <Label htmlFor="name">Full Name</Label>
+              <Input
+                id="name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                className="mt-1"
+                placeholder="Enter your full name"
+              />
+            </div>
+
             <div>
               <Label htmlFor="email">Email</Label>
               <Input
@@ -80,7 +117,22 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 className="mt-1"
-                placeholder="Enter your password"
+                placeholder="Create a password"
+                minLength={6}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                className="mt-1"
+                placeholder="Confirm your password"
+                minLength={6}
               />
             </div>
 
@@ -96,22 +148,22 @@ export default function LoginPage() {
               className="w-full h-12 text-base font-medium"
               disabled={isLoading}
             >
-              {isLoading ? 'Signing in...' : 'Sign In'}
+              {isLoading ? 'Creating Account...' : 'Create Account'}
             </Button>
           </form>
 
           <div className="mt-4 text-center">
             <p className="text-sm text-muted-foreground">
-              Don't have an account?{' '}
-              <Link href="/quotes/signup" className="text-primary hover:underline">
-                Sign up
+              Already have an account?{' '}
+              <Link href="/quotes/login" className="text-primary hover:underline">
+                Sign in
               </Link>
             </p>
           </div>
 
           <div className="mt-6 text-center">
             <p className="text-sm text-muted-foreground">
-              By signing in, you agree to our{' '}
+              By creating an account, you agree to our{' '}
               <a href="#" className="text-primary hover:underline">Terms</a>
               {' '}and{' '}
               <a href="#" className="text-primary hover:underline">Privacy Policy</a>
