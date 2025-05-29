@@ -29,11 +29,11 @@ export async function GET(request: NextRequest) {
         })
         
         // Redirect to setup page for first-time users
-        return NextResponse.redirect(new URL('/setup', requestUrl.origin))
+        return NextResponse.redirect(new URL('/quotes/setup', requestUrl.origin))
       }
     }
   }
 
   // URL to redirect to after sign in process completes
-  return NextResponse.redirect(new URL('/dashboard', requestUrl.origin))
+  return NextResponse.redirect(new URL('/quotes/dashboard', requestUrl.origin))
 }

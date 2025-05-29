@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import { createClient } from '@/lib/supabase/server'
 import { Plus, FileText, ChartBar } from 'lucide-react'
 import Link from 'next/link'
@@ -119,11 +118,4 @@ export default async function DashboardPage() {
       )}
     </div>
   )
-=======
-import { redirect } from 'next/navigation'
-
-export default async function DashboardPage() {
-  // Redirect to the chat interface for a unified experience
-  redirect('/chat/new')
->>>>>>> 23c926dd385cd4228de619ba7e5916f4eacb7e3c
 }

@@ -5,14 +5,6 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-<<<<<<< HEAD
-export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(amount)
-}
-
 export function formatDate(date: string | Date): string {
   const dateObj = typeof date === 'string' ? new Date(date) : date
   return dateObj.toLocaleDateString('en-US', {
@@ -24,20 +16,6 @@ export function formatDate(date: string | Date): string {
 
 export function calculatePaintNeeded(sqft: number, coats: number, coverage: number = 350): number {
   return Math.ceil((sqft * coats) / coverage)
-=======
-export function calculateMarkup(baseCost: number, markupPercentage: number) {
-  const markupAmount = baseCost * (markupPercentage / 100)
-  const finalPrice = baseCost + markupAmount
-  const profit = markupAmount
-  
-  return {
-    baseCost,
-    markupPercentage,
-    markupAmount,
-    finalPrice,
-    profit,
-  }
->>>>>>> 23c926dd385cd4228de619ba7e5916f4eacb7e3c
 }
 
 // Get consistent color from project ID
@@ -79,4 +57,19 @@ export function formatCurrency(amount: number): string {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount);
+}
+
+// Calculate markup
+export function calculateMarkup(baseCost: number, markupPercentage: number) {
+  const markupAmount = baseCost * (markupPercentage / 100)
+  const finalPrice = baseCost + markupAmount
+  const profit = markupAmount
+  
+  return {
+    baseCost,
+    markupPercentage,
+    markupAmount,
+    finalPrice,
+    profit,
+  }
 }
