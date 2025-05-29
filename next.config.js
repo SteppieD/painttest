@@ -1,10 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  basePath: '/quotes',
+  assetPrefix: '/quotes/',
   images: {
     domains: ['lh3.googleusercontent.com'], // For Google profile images
   },
-  experimental: {
-    serverActions: true,
+  // Configure for subfolder deployment
+  async redirects() {
+    return []
   },
 }
 

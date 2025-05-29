@@ -40,143 +40,162 @@ export async function POST(request: NextRequest) {
       `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`
     ).join('\n')
 
-    const prompt = `You are an AI assistant helping a painting business owner create accurate quotes for their clients. Your role is to gather project details through natural conversation.
-
-Current conversation state: ${JSON.stringify(conversationState)}
-Cost settings: ${JSON.stringify(costs)}
-
-Key information to collect:
-- Client name and property address
-- Room details (number, types, dimensions)
-- Paint requirements (coats, quality - good/better/best)
-- Surface conditions
-- Special requirements
-
-IMPORTANT INSTRUCTIONS:
-1. Be conversational and friendly
-2. When you have enough information, provide a BRIEF summary in this format:
-   "Great! I have all the information I need. Here's a quick summary:
-   - [Client name] at [address]
-   - [Number] rooms: [room types]
-   - [X] coats of [quality] paint
-   
-   Based on your cost settings, this will be approximately $[total cost] in costs.
-   With your selected markup, the quote to the client will be around $[price].
-   
-   You can adjust the markup percentage on the right and generate the PDF when ready!"
-
-3. Do NOT show detailed calculations or break down costs in the chat
-4. Keep responses short and focused
-5. Guide the conversation naturally
+    const prompt = `You are an efficient AI assistant for a painting contractor. You CALCULATE things automatically and make reasonable assumptions rather than asking excessive questions.
 
 Conversation history:
 ${conversationHistory}
-
 User: ${message}
 
-Respond naturally and concisely. If you have all needed information, provide the brief summary as instructed.`
+Painting costs: Labor $${costs.labor_cost_per_hour}/hour, Good paint $${costs.paint_costs.good}/gal, Better paint $${costs.paint_costs.better}/gal, Best paint $${costs.paint_costs.best}/gal, Supplies base cost: $${costs.supplies_base_cost}
+
+RULES:
+1. Be efficient - CALCULATE automatically using standard assumptions:
+   - 400 sqft per gallon coverage
+   - 8 hours labor per 400 sqft
+   - Most jobs need 2 coats
+2. Only ask for ESSENTIAL info: client name, email, phone, property address, room size/description, paint quality preference
+3. When you have basics, say "READY_FOR_QUOTE" followed by:
+{
+  "clientName": "[name]",
+  "propertyAddress": "[address]",
+  "clientEmail": "[email]",
+  "clientPhone": "[phone]",
+  "rooms": [{"name": "[room]", "sqft": [number], "coats": 2}],
+  "totalSqft": [number],
+  "paintQuality": "better"
+}
+4. Be professional but friendly
+5. Keep responses under 2 sentences
+
+Respond:`
 
     const result = await model.generateContent(prompt)
     const response = await result.response
     const text = response.text()
 
-    // Parse the response to see if we need to create a project or update state
-    let responseData: any = { response: text }
+    // Always return the AI response
+    let responseData: any = { 
+      response: text,
+      stage: conversationState.stage || 'gathering_info'
+    }
 
-    // Check if we should create a new project
-    if (conversationState.stage === 'gathering_info' && !conversationState.clientName) {
-      // Try to extract client name and address
-      const lowerMessage = message.toLowerCase()
-      
-      // Look for patterns like "name is X" or "client is X"
-      if (lowerMessage.includes('name') || lowerMessage.includes('client')) {
-        // Simple extraction - you might want to make this more robust
-        const parts = message.split(/,|\.|address is|at /i)
+    console.log('AI Response:', text)
+
+    // Basic project creation logic
+    if (!conversationState.projectId && message.toLowerCase().includes('name')) {
+      try {
+        // Very simple name extraction - can be improved later
+        const parts = message.split(/,|\s+at\s+/i)
         if (parts.length >= 2) {
-          const clientName = parts[0].replace(/client(s)?(\s+name)?(\s+is)?/i, '').trim()
+          const clientName = parts[0].replace(/.*name\s+is\s+/i, '').trim()
           const propertyAddress = parts[1].trim()
           
-          // Create a new project
           const { data: project } = await supabase
             .from('projects')
             .insert({
               user_id: userId,
               client_name: clientName,
-              property_address: propertyAddress
+              property_address: propertyAddress,
+              client_email: null,
+              client_phone: null,
+              preferred_contact: 'email'
             })
             .select()
             .single()
 
           if (project) {
             responseData.projectId = project.id
-            responseData.conversationState = {
-              ...conversationState,
-              clientName,
-              propertyAddress,
-              projectDetails: {
-                rooms: [],
-                totalSqft: 0,
-                paintQuality: 'better',
-                coats: 2
-              }
-            }
+            responseData.clientInfo = { name: clientName, address: propertyAddress, email: null, phone: null }
           }
         }
+      } catch (error) {
+        console.error('Project creation error:', error)
       }
     }
 
-    // Check if we have enough info to calculate costs
-    if (text.includes('approximately $') && conversationState.clientName) {
-      // Extract room information from conversation
-      const rooms = []
-      let totalSqft = 0
-      
-      // Simple parsing - in production you'd want more robust parsing
-      if (message.includes('14 by 8 by 10')) {
-        // Calculate square footage for 2 bedrooms
-        const roomSqft = (2 * (14 * 10) + 2 * (8 * 10)) // walls only
-        rooms.push({
-          name: 'Bedroom 1',
-          sqft: roomSqft,
-          windowsCount: 1,
-          doorsCount: 1,
-          ceilingIncluded: false,
-          trimIncluded: false
-        })
-        rooms.push({
-          name: 'Bedroom 2',
-          sqft: roomSqft,
-          windowsCount: 1,
-          doorsCount: 1,
-          ceilingIncluded: false,
-          trimIncluded: false
-        })
-        totalSqft = roomSqft * 2
-      }
+    // Check if AI is ready to create quote
+    if (text.includes('READY_FOR_QUOTE')) {
+      try {
+        // Extract JSON from the response
+        const jsonStart = text.indexOf('{');
+        const jsonEnd = text.lastIndexOf('}') + 1;
+        const jsonStr = text.substring(jsonStart, jsonEnd);
+        const projectData = JSON.parse(jsonStr);
+        
+        // Create project if needed
+        if (!conversationState.projectId && projectData.clientName) {
+          const { data: project } = await supabase
+            .from('projects')
+            .insert({
+              user_id: userId,
+              client_name: projectData.clientName,
+              property_address: projectData.propertyAddress,
+              client_email: projectData.clientEmail || null,
+              client_phone: projectData.clientPhone || null,
+              preferred_contact: projectData.clientEmail ? 'email' : 'phone'
+            })
+            .select()
+            .single()
 
-      // Calculate costs
-      const paintGallons = Math.ceil((totalSqft * 2) / 350) // 2 coats
-      const paintCost = paintGallons * costs.paint_costs.better
-      const laborHours = Math.ceil(totalSqft / 200) * 2 // rough estimate
-      const laborCost = laborHours * costs.labor_cost_per_hour
-      const suppliesCost = costs.supplies_base_cost
-
-      const baseCosts = {
-        labor: laborCost,
-        paint: paintCost,
-        supplies: suppliesCost
-      }
-      
-      responseData.conversationState = {
-        ...conversationState,
-        stage: 'quote_complete',
-        baseCosts,
-        projectDetails: {
-          rooms,
-          totalSqft,
-          paintQuality: 'better',
-          coats: 2
+          if (project) {
+            responseData.projectId = project.id
+            responseData.clientInfo = { 
+              name: projectData.clientName, 
+              address: projectData.propertyAddress,
+              email: projectData.clientEmail,
+              phone: projectData.clientPhone
+            }
+          }
         }
+
+        // Calculate painting costs based on extracted data
+        const totalSqft = projectData.totalSqft || 0
+        const paintQuality = projectData.paintQuality || 'better'
+        
+        // Estimate painting costs
+        const laborHours = Math.ceil((totalSqft / 400) * 8) // 8 hours per 400 sqft
+        const paintGallons = Math.ceil(totalSqft / 400)
+        const paintCostPerGallon = costs.paint_costs[paintQuality as keyof typeof costs.paint_costs] || costs.paint_costs.better
+        
+        const laborCost = laborHours * costs.labor_cost_per_hour
+        const paintCost = paintGallons * paintCostPerGallon
+        const suppliesCost = costs.supplies_base_cost
+
+        const baseCosts = {
+          labor: laborCost,
+          paint: paintCost,
+          supplies: suppliesCost
+        }
+        
+        responseData.stage = 'calculating_quote'
+        responseData.baseCosts = baseCosts
+        responseData.metadata = {
+          stage: 'calculating_quote',
+          baseCosts,
+          projectDetails: {
+            ...projectData,
+            rooms: projectData.rooms || [],
+            totalSqft: totalSqft,
+            paintQuality: paintQuality,
+            laborHours: laborHours
+          }
+        }
+        
+        // Replace the AI response with a user-friendly message
+        responseData.response = `Perfect! Here's your painting quote:
+
+• ${totalSqft} sqft total area
+• ${paintQuality} quality paint
+• ${laborHours} hours estimated labor
+
+Base costs: Labor $${laborCost}, Paint $${paintCost}, Supplies $${suppliesCost}
+Total base cost: $${(laborCost + paintCost + suppliesCost).toFixed(0)}
+
+Select your markup percentage to finalize the quote!`
+        
+      } catch (error) {
+        console.error('Error parsing project data:', error)
+        responseData.response = "Let me gather the basic details. What's the client name and property address?"
       }
     }
 

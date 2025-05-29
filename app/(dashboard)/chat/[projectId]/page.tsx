@@ -23,7 +23,7 @@ export default async function ChatPage({ params }: ChatPageProps) {
   if (params.projectId === 'new') {
     return (
       <Suspense fallback={<LoadingChat />}>
-        <ChatInterface projectId="new" userId={user.id} />
+        <ChatInterface />
       </Suspense>
     )
   }
@@ -42,7 +42,7 @@ export default async function ChatPage({ params }: ChatPageProps) {
 
   return (
     <Suspense fallback={<LoadingChat />}>
-      <ChatInterface projectId={params.projectId} userId={user.id} />
+      <ChatInterface />
     </Suspense>
   )
 }

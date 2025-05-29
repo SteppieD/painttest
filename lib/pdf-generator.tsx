@@ -179,6 +179,7 @@ const QuotePDF = ({
         {/* Header with Company Info */}
         <View style={styles.header}>
           <View style={styles.companyInfo}>
+            {/* eslint-disable-next-line jsx-a11y/alt-text */}
             {companyLogo && <Image style={styles.logo} src={companyLogo} />}
             <Text style={styles.companyName}>{companyName}</Text>
             <Text style={styles.contactInfo}>{userName}</Text>

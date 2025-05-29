@@ -5,7 +5,7 @@ interface MessageBubbleProps {
   message: {
     role: 'user' | 'assistant'
     content: string
-    timestamp: Date
+    created_at: string
   }
 }
 
@@ -42,7 +42,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
           'text-xs text-muted-foreground px-1',
           isUser ? 'text-right' : 'text-left'
         )}>
-          {format(message.timestamp, 'h:mm a')}
+          {format(new Date(message.created_at), 'h:mm a')}
         </p>
       </div>
     </div>

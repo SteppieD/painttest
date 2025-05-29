@@ -86,7 +86,7 @@ export default function SetupPage() {
     <div className="min-h-screen flex items-center justify-center p-4">
       <Card className="w-full max-w-lg">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Welcome! Let's set up your account</CardTitle>
+          <CardTitle className="text-2xl">Welcome! Let&apos;s set up your account</CardTitle>
           <CardDescription>
             Just a few quick details to get you started
           </CardDescription>

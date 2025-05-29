@@ -12,6 +12,15 @@ export function formatCurrency(amount: number): string {
   }).format(amount)
 }
 
+export function formatDate(date: string | Date): string {
+  const dateObj = typeof date === 'string' ? new Date(date) : date
+  return dateObj.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric'
+  })
+}
+
 export function calculatePaintNeeded(sqft: number, coats: number, coverage: number = 350): number {
   return Math.ceil((sqft * coats) / coverage)
 }
