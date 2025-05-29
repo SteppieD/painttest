@@ -27,8 +27,12 @@ yarn-error.log*
 # local env files - NEVER commit these!
 .env*.local
 .env
+<<<<<<< HEAD
 .env.production
 .env.development
+=======
+.env.local
+>>>>>>> 23c926dd385cd4228de619ba7e5916f4eacb7e3c
 
 # vercel
 .vercel
