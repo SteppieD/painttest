@@ -11,12 +11,17 @@ export default withAuth(
       authorized: ({ token, req }) => {
         // Allow access to login page and auth routes
         if (req.nextUrl.pathname.startsWith('/quotes/login') || 
-            req.nextUrl.pathname.startsWith('/quotes/api/auth')) {
+            req.nextUrl.pathname.startsWith('/api/auth')) {
           return true
         }
         
-        // Require authentication for all other routes
-        return !!token
+        // Require authentication for all other routes under /quotes
+        if (req.nextUrl.pathname.startsWith('/quotes')) {
+          return !!token
+        }
+        
+        // Allow other routes
+        return true
       },
     },
     pages: {
