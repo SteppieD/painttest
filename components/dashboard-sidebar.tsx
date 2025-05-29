@@ -1,12 +1,11 @@
 'use client'
 
-import { User } from '@supabase/supabase-js'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
-import { Settings, LogOut, Home, FileText, MessageSquare, Plus, User as UserIcon, Building, Home as HomeIcon } from 'lucide-react'
+import { Settings, LogOut, Home, FileText, MessageSquare, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { useSupabase } from '@/app/providers'
+import { signOut } from 'next-auth/react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,24 +16,27 @@ import {
 } from '@/components/ui/dropdown-menu'
 
 interface DashboardSidebarProps {
-  user: User
+  user: {
+    id: string
+    name?: string | null
+    email?: string | null
+    image?: string | null
+  }
   profile: any
   projects: Array<{
     id: string
-    client_name: string | null
-    property_address: string | null
-    created_at: string
+    clientName: string
+    propertyAddress: string
+    createdAt: Date
   }>
 }
 
 export function DashboardSidebar({ user, profile, projects }: DashboardSidebarProps) {
   const router = useRouter()
   const pathname = usePathname()
-  const supabase = useSupabase()
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    router.push('/login')
+    await signOut({ callbackUrl: '/quotes/login' })
   }
 
   const navItems = [
@@ -76,7 +78,7 @@ export function DashboardSidebar({ user, profile, projects }: DashboardSidebarPr
           <div className="space-y-1">
             {projects.map((project, index) => {
               const isActive = pathname === `/chat/${project.id}`
-              const clientName = project.client_name || 'Untitled Quote'
+              const clientName = project.clientName || 'Untitled Quote'
               const initial = clientName.charAt(0).toUpperCase()
               
               // Generate a consistent color based on the client name
@@ -124,9 +126,9 @@ export function DashboardSidebar({ user, profile, projects }: DashboardSidebarPr
                       }`}>
                         {clientName}
                       </p>
-                      {project.property_address && (
+                      {project.propertyAddress && (
                         <p className="text-xs text-muted-foreground truncate">
-                          {project.property_address}
+                          {project.propertyAddress}
                         </p>
                       )}
                     </div>

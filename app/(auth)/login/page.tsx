@@ -1,24 +1,12 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { useSupabase } from '@/app/providers'
+import { signIn } from 'next-auth/react'
 import { FcGoogle } from 'react-icons/fc'
-import { Paintbrush } from 'lucide-react'
 
 export default function LoginPage() {
-  const supabase = useSupabase()
-
-  const handleGoogleLogin = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${location.origin}/quotes/auth/callback`,
-      },
-    })
-    
-    if (error) {
-      console.error('Error during login:', error)
-    }
+  const handleGoogleLogin = () => {
+    signIn('google', { callbackUrl: '/quotes/dashboard' })
   }
 
   return (
