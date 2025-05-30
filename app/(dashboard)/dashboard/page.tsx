@@ -1,4 +1,4 @@
-import { requireAuth } from '@/lib/auth'
+import { getSessionWithCompany } from '@/lib/auth'
 import { db } from '@/lib/database'
 import { Plus, FileText, ChartBar } from 'lucide-react'
 import Link from 'next/link'
@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { redirect } from 'next/navigation'
 
 export default async function DashboardPage() {
-  const auth = await requireAuth()
+  const auth = await getSessionWithCompany()
   
   if (!auth) {
     redirect('/login')

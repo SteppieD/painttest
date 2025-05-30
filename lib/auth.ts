@@ -12,6 +12,24 @@ export async function getSession() {
   return { isLoggedIn: true, companyId }
 }
 
+export async function getSessionWithCompany() {
+  const session = await getSession()
+  
+  if (!session.isLoggedIn || !session.companyId) {
+    return null
+  }
+  
+  const company = await db.company.findUnique({
+    where: { id: session.companyId }
+  })
+  
+  if (!company) {
+    return null
+  }
+  
+  return { session, company }
+}
+
 export async function setSession(companyId: string) {
   const cookieStore = await cookies()
   cookieStore.set('companyId', companyId, {
@@ -25,6 +43,16 @@ export async function setSession(companyId: string) {
 export async function clearSession() {
   const cookieStore = await cookies()
   cookieStore.delete('companyId')
+}
+
+export async function generateAccessCode(): Promise<string> {
+  // Generate a simple 6-character alphanumeric access code
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+  let result = ''
+  for (let i = 0; i < 6; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  return result
 }
 
 export async function loginWithAccessCode(accessCode: string) {

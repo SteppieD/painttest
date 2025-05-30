@@ -1,4 +1,4 @@
-import { requireAuth } from '@/lib/auth'
+import { getSessionWithCompany } from '@/lib/auth'
 import { db } from '@/lib/database'
 import Link from 'next/link'
 import { FileText, Calendar, DollarSign, Plus } from 'lucide-react'
@@ -8,7 +8,7 @@ import { formatCurrency, formatDate } from '@/lib/utils'
 import { redirect } from 'next/navigation'
 
 export default async function QuotesPage() {
-  const auth = await requireAuth()
+  const auth = await getSessionWithCompany()
   
   if (!auth) {
     redirect('/login')

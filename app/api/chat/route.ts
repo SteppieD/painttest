@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import { requireAuth } from '@/lib/auth'
+import { getSessionWithCompany } from '@/lib/auth'
 import { db } from '@/lib/database'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
   try {
     const { message, conversationState, messages, projectId } = await request.json()
 
-    const auth = await requireAuth()
+    const auth = await getSessionWithCompany()
     if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }

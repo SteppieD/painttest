@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { DashboardHeader } from '@/components/dashboard-header'
 import { DashboardSidebar } from '@/components/dashboard-sidebar'
-import { requireAuth } from '@/lib/auth'
+import { getSessionWithCompany } from '@/lib/auth'
 import { db } from '@/lib/database'
 
 export default async function DashboardLayout({
@@ -9,7 +9,7 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  const auth = await requireAuth()
+  const auth = await getSessionWithCompany()
   
   if (!auth) {
     redirect('/login')

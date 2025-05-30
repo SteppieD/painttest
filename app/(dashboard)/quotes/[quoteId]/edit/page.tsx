@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import { notFound, redirect } from 'next/navigation'
-import { requireAuth } from '@/lib/auth'
+import { getSessionWithCompany } from '@/lib/auth'
 import { db } from '@/lib/database'
 import { QuoteEditor } from '@/components/quotes/quote-editor'
 
@@ -11,7 +11,7 @@ interface EditQuotePageProps {
 }
 
 export default async function EditQuotePage({ params }: EditQuotePageProps) {
-  const auth = await requireAuth()
+  const auth = await getSessionWithCompany()
   
   if (!auth) {
     redirect('/login')

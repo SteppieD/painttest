@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import { notFound, redirect } from 'next/navigation'
-import { requireAuth } from '@/lib/auth'
+import { getSessionWithCompany } from '@/lib/auth'
 import { db } from '@/lib/database'
 import { QuoteViewer } from '@/components/quotes/quote-viewer'
 import Link from 'next/link'
@@ -13,7 +13,7 @@ interface QuotePageProps {
 }
 
 export default async function QuotePage({ params }: QuotePageProps) {
-  const auth = await requireAuth()
+  const auth = await getSessionWithCompany()
   
   if (!auth) {
     redirect('/login')
