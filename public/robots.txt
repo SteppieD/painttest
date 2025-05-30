@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://painting-quote-jz9licz6t-danger-dangers-projects.vercel.app/sitemap.xml

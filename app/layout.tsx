@@ -8,16 +8,17 @@ import { PWARegister } from '@/components/pwa-register'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'QuoteCraft Pro',
-  description: 'Create professional painting quotes with AI assistance',
+  title: 'QuoteCraft Pro - Professional Painting Quotes',
+  description: 'Professional painting quote generator for contractors. Create accurate estimates with AI assistance.',
+  keywords: 'painting quotes, contractor software, estimate generator, painting business',
+  authors: [{ name: 'QuoteCraft Pro' }],
   manifest: '/manifest.json',
-  themeColor: '#3b82f6',
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'default',
-    title: 'QuoteCraft Pro',
-  },
+  robots: 'index, follow',
+  openGraph: {
+    title: 'QuoteCraft Pro - Professional Painting Quotes',
+    description: 'Professional painting quote generator for contractors',
+    type: 'website'
+  }
 }
 
 export default function RootLayout({
