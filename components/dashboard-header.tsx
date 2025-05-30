@@ -1,10 +1,13 @@
 'use client'
 
-import { User } from '@supabase/supabase-js'
 import { Paintbrush } from 'lucide-react'
 
 interface DashboardHeaderProps {
-  user: User
+  user: {
+    id: string
+    email?: string | null
+    name?: string | null
+  }
   profile: any
 }
 

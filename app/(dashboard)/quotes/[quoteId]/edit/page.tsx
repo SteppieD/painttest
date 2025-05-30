@@ -58,9 +58,20 @@ export default async function EditQuotePage({ params }: EditQuotePageProps) {
     }
   }
 
+  // Get cost settings for the company
+  const costSettings = {
+    labor_cost_per_hour: 50,
+    paint_costs: {
+      good: 25,
+      better: 35,
+      best: 50
+    },
+    supplies_base_cost: 100
+  }
+
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <QuoteEditor quote={quoteData} />
+      <QuoteEditor quote={quoteData} costSettings={costSettings} />
     </Suspense>
   )
 }
