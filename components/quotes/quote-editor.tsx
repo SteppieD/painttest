@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { formatCurrency, calculateMarkup } from '@/lib/utils'
 import { useToast } from '@/components/ui/use-toast'
-import { createClient } from '@/lib/supabase/client'
+// Removed broken import
 
 interface QuoteEditorProps {
   quote: {

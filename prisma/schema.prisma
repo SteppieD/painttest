@@ -6,99 +6,72 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-// NextAuth.js tables
-model Account {
-  id                String  @id @default(cuid())
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String?
-  access_token      String?
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String?
-  session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerAccountId])
-}
-
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
-  image         String?
-  password      String?   // For credentials login
-  createdAt     DateTime  @default(now())
-  accounts      Account[]
-  sessions      Session[]
+model Company {
+  id          String   @id @default(cuid())
+  accessCode  String   @unique @map("access_code")
+  name        String
+  phone       String?
+  email       String?
+  logo        String?
+  settings    Json?     // Company settings (labor rates, markup, etc.)
+  createdAt   DateTime @default(now()) @map("created_at")
+  lastUsed    DateTime @default(now()) @map("last_used")
   
-  // App-specific fields
-  companyName   String?
-  phone         String?
-  businessInfo  String?   // JSON string
+  projects    Project[]
   
-  projects      Project[]
+  @@map("companies")
 }
 
-model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
-
-  @@unique([identifier, token])
-}
-
-// App tables
 model Project {
   id              String   @id @default(cuid())
-  userId          String
-  clientName      String
-  propertyAddress String
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  companyId       String   @map("company_id")
+  clientName      String   @map("client_name")
+  clientEmail     String?  @map("client_email")
+  clientPhone     String?  @map("client_phone")
+  propertyAddress String   @map("property_address")
+  description     String?
+  status          String   @default("active") // active, completed, cancelled
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
   
-  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  quotes       Quote[]
-  chatMessages ChatMessage[]
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  quotes          Quote[]
+  
+  @@map("projects")
 }
 
 model Quote {
-  id               String   @id @default(cuid())
-  projectId        String
-  baseCosts        String   // JSON string
-  markupPercentage Float
-  finalPrice       Float
-  details          String?  // JSON string
-  validUntil       DateTime
-  createdAt        DateTime @default(now())
+  id          String   @id @default(cuid())
+  projectId   String   @map("project_id")
+  version     Int      @default(1)
+  lineItems   Json     // Array of quote line items
+  subtotal    Float
+  tax         Float    @default(0)
+  total       Float
+  markup      Float    @default(0)
+  status      String   @default("draft") // draft, sent, accepted, rejected
+  notes       String?
+  validUntil  DateTime? @map("valid_until")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  acceptedAt  DateTime? @map("accepted_at")
   
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  @@map("quotes")
 }
 
-model ChatMessage {
-  id        String   @id @default(cuid())
-  projectId String
-  role      String
-  content   String
-  metadata  String?  // JSON string
-  createdAt DateTime @default(now())
+model Session {
+  id          String   @id @default(cuid())
+  sessionId   String   @unique @map("session_id")
+  companyId   String   @map("company_id")
+  data        Json?
+  expiresAt   DateTime @map("expires_at")
+  createdAt   DateTime @default(now()) @map("created_at")
   
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  @@map("sessions")
 }

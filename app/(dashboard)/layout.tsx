@@ -1,51 +1,64 @@
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { DashboardHeader } from '@/components/dashboard-header'
 import { DashboardSidebar } from '@/components/dashboard-sidebar'
-import { prisma } from '@/lib/prisma'
+import { requireAuth } from '@/lib/auth'
+import { db } from '@/lib/database'
 
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const session = await getServerSession(authOptions)
+  const auth = await requireAuth()
   
-  if (!session?.user) {
+  if (!auth) {
     redirect('/quotes/login')
   }
 
-  // Get user data with projects
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    include: {
-      projects: {
-        orderBy: { createdAt: 'desc' },
-        take: 10,
-        select: {
-          id: true,
-          clientName: true,
-          propertyAddress: true,
-          createdAt: true,
-        }
-      }
+  const { session, company } = auth
+
+  // Get recent projects
+  const projects = await db.project.findMany({
+    where: { companyId: company.id },
+    orderBy: { createdAt: 'desc' },
+    take: 10,
+    select: {
+      id: true,
+      clientName: true,
+      propertyAddress: true,
+      createdAt: true
     }
   })
 
-  if (!user) {
-    redirect('/quotes/login')
+  const userData = {
+    id: company.id,
+    email: company.email,
+    name: company.name,
+    image: company.logo
   }
+
+  const profileData = {
+    ...company,
+    companyName: company.name,
+    businessInfo: company.settings ? JSON.stringify(company.settings) : null
+  }
+
+  const formattedProjects = projects.map(project => ({
+    id: project.id,
+    clientName: project.clientName,
+    propertyAddress: project.propertyAddress,
+    createdAt: project.createdAt
+  }))
 
   return (
     <div className="min-h-screen bg-background flex">
       {/* Sidebar */}
-      <DashboardSidebar user={session.user} profile={user} projects={user.projects} />
+      <DashboardSidebar user={userData} profile={profileData} projects={formattedProjects} />
       
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {/* Top Header */}
-        <DashboardHeader user={session.user} profile={user} />
+        <DashboardHeader user={userData} profile={profileData} />
         
         {/* Page Content */}
         <main className="flex-1">

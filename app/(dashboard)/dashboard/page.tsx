@@ -1,121 +1,157 @@
-import { createClient } from '@/lib/supabase/server'
+import { requireAuth } from '@/lib/auth'
+import { db } from '@/lib/database'
 import { Plus, FileText, ChartBar } from 'lucide-react'
 import Link from 'next/link'
 import { formatDistanceToNow } from 'date-fns'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { redirect } from 'next/navigation'
 
 export default async function DashboardPage() {
-  const supabase = await createClient()
+  const auth = await requireAuth()
   
-  const { data: { user } } = await supabase.auth.getUser()
-  
-  if (!user) return null
+  if (!auth) {
+    redirect('/quotes/login')
+  }
 
-  // Fetch recent quotes with project info
-  const { data: quotes } = await supabase
-    .from('quotes')
-    .select(`
-      *,
-      project:projects (
-        client_name,
-        property_address
-      )
-    `)
-    .in('project_id', 
-      (await supabase
-        .from('projects')
-        .select('id')
-        .eq('user_id', user.id)
-      ).data?.map(p => p.id) || []
-    )
-    .order('created_at', { ascending: false })
-    .limit(5)
+  const { company } = auth
+
+  // Get recent projects
+  const projects = await db.project.findMany({
+    where: { companyId: company.id },
+    include: {
+      quotes: {
+        orderBy: { createdAt: 'desc' },
+        take: 1
+      }
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 5
+  })
+
+  // Get quotes statistics
+  const quotesStats = await db.quote.groupBy({
+    by: ['status'],
+    where: {
+      project: {
+        companyId: company.id
+      }
+    },
+    _count: {
+      status: true
+    }
+  })
+
+  const totalQuotes = quotesStats.reduce((sum, stat) => sum + stat._count.status, 0)
+  const acceptedQuotes = quotesStats.find(s => s.status === 'accepted')?._count.status || 0
+  const acceptanceRate = totalQuotes > 0 ? (acceptedQuotes / totalQuotes * 100).toFixed(1) : '0'
 
   return (
-    <div className="container mx-auto p-6">
-      {/* Welcome Section */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Professional Painting Quotes 🎨</h1>
-        <p className="text-muted-foreground">Accurate quotes, professional results</p>
+    <div className="space-y-8 p-8">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground">
+            Welcome back, {company.name}
+          </p>
+        </div>
+        <Button asChild>
+          <Link href="/quotes/chat/new">
+            <Plus className="h-4 w-4 mr-2" />
+            New Quote
+          </Link>
+        </Button>
       </div>
 
-      {/* Quick Actions */}
-      <div className="grid gap-4 md:grid-cols-3 mb-8">
-        <Link href="/chat/new">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-            <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Plus className="h-6 w-6 text-primary" />
-              </div>
-              <h3 className="font-semibold mb-1">New Painting Quote</h3>
-              <p className="text-sm text-muted-foreground">Get instant painting estimates</p>
-            </CardContent>
-          </Card>
-        </Link>
-        
-        <Link href="/quotes">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-            <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
-                <FileText className="h-6 w-6 text-primary" />
-              </div>
-              <h3 className="font-semibold mb-1">View Quotes</h3>
-              <p className="text-sm text-muted-foreground">Manage painting quotes</p>
-            </CardContent>
-          </Card>
-        </Link>
-        
-        <Link href="/insights">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-            <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
-                <ChartBar className="h-6 w-6 text-primary" />
-              </div>
-              <h3 className="font-semibold mb-1">Insights</h3>
-              <p className="text-sm text-muted-foreground">Business analytics & trends</p>
-            </CardContent>
-          </Card>
-        </Link>
-      </div>
-
-      {/* Recent Quotes */}
-      {quotes && quotes.length > 0 && (
+      {/* Stats */}
+      <div className="grid gap-4 md:grid-cols-3">
         <Card>
-          <CardHeader>
-            <CardTitle>Recent Quotes</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Projects</CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
+            <div className="text-2xl font-bold">{projects.length}</div>
+            <p className="text-xs text-muted-foreground">
+              Active projects
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Quotes</CardTitle>
+            <ChartBar className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalQuotes}</div>
+            <p className="text-xs text-muted-foreground">
+              Quotes generated
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Acceptance Rate</CardTitle>
+            <ChartBar className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{acceptanceRate}%</div>
+            <p className="text-xs text-muted-foreground">
+              Quotes accepted
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recent Projects */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Projects</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {projects.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground mb-4">No projects yet</p>
+              <Button asChild>
+                <Link href="/quotes/chat/new">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Your First Quote
+                </Link>
+              </Button>
+            </div>
+          ) : (
             <div className="space-y-4">
-              {quotes.map((quote) => (
-                <div key={quote.id} className="flex items-center justify-between py-3 border-b last:border-0">
+              {projects.map((project) => (
+                <div key={project.id} className="flex items-center justify-between p-4 border rounded-lg">
                   <div>
-                    <p className="font-medium">{quote.project.client_name}</p>
-                    <p className="text-sm text-muted-foreground">{quote.project.property_address}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {formatDate(quote.created_at)}
+                    <h3 className="font-medium">{project.clientName}</h3>
+                    <p className="text-sm text-muted-foreground">{project.propertyAddress}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Created {formatDistanceToNow(new Date(project.createdAt))} ago
                     </p>
                   </div>
-                  <div className="text-right">
-                    <p className="font-semibold">{formatCurrency(quote.final_price)}</p>
-                    <Link href={`/quotes/${quote.id}`}>
-                      <Button size="sm" variant="outline" className="mt-1">
-                        View
+                  <div className="flex items-center gap-2">
+                    {project.quotes[0] && (
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href={`/quotes/${project.quotes[0].id}`}>
+                          View Quote
+                        </Link>
                       </Button>
-                    </Link>
+                    )}
+                    <Button variant="outline" size="sm" asChild>
+                      <Link href={`/quotes/chat/${project.id}`}>
+                        Open Chat
+                      </Link>
+                    </Button>
                   </div>
                 </div>
               ))}
             </div>
-            <div className="mt-4 text-center">
-              <Link href="/quotes">
-                <Button variant="outline">View All Quotes</Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }

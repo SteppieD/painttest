@@ -1,11 +1,10 @@
 import { redirect } from 'next/navigation'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { requireAuth } from '@/lib/auth'
 
 export default async function Home() {
-  const session = await getServerSession(authOptions)
+  const auth = await requireAuth()
 
-  if (!session) {
+  if (!auth) {
     redirect('/quotes/login')
   }
 

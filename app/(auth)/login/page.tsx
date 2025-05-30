@@ -1,41 +1,65 @@
 'use client'
 
-// Email/password login page - updated
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { signIn } from 'next-auth/react'
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { AlertCircle, Key } from 'lucide-react'
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const [accessCode, setAccessCode] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError('')
 
+    if (accessCode.length !== 6) {
+      setError('Access code must be 6 digits')
+      setIsLoading(false)
+      return
+    }
+
     try {
-      const result = await signIn('credentials', {
-        email,
-        password,
-        callbackUrl: '/quotes/dashboard',
-        redirect: false,
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accessCode })
       })
 
-      if (result?.error) {
-        setError('Invalid email or password')
-      } else if (result?.url) {
-        window.location.href = result.url
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(data.error || 'Invalid access code')
+        return
       }
+
+      // Success - redirect to dashboard
+      router.push('/quotes/dashboard')
+      router.refresh()
     } catch (error) {
       setError('Something went wrong. Please try again.')
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const generateCode = async () => {
+    try {
+      const response = await fetch('/api/auth/generate-code', {
+        method: 'POST'
+      })
+      const data = await response.json()
+      
+      if (response.ok) {
+        setAccessCode(data.accessCode)
+      }
+    } catch (error) {
+      console.error('Failed to generate code:', error)
     }
   }
 
@@ -56,37 +80,32 @@ export default function LoginPage() {
 
         {/* Login Card */}
         <div className="bg-card rounded-xl shadow-subtle border p-8">
-          <h2 className="text-xl font-semibold text-center mb-6">Sign In</h2>
+          <div className="text-center mb-6">
+            <Key className="h-12 w-12 text-primary mx-auto mb-3" />
+            <h2 className="text-xl font-semibold">Enter Access Code</h2>
+            <p className="text-sm text-muted-foreground mt-2">
+              Enter your 6-digit company access code
+            </p>
+          </div>
           
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="accessCode">Access Code</Label>
               <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="accessCode"
+                type="text"
+                value={accessCode}
+                onChange={(e) => setAccessCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                 required
-                className="mt-1"
-                placeholder="Enter your email"
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="mt-1"
-                placeholder="Enter your password"
+                className="mt-1 text-center text-2xl font-mono tracking-widest"
+                placeholder="123456"
+                maxLength={6}
               />
             </div>
 
             {error && (
-              <div className="text-red-600 text-sm text-center">
+              <div className="flex items-center gap-2 text-red-600 text-sm bg-red-50 p-3 rounded-lg">
+                <AlertCircle className="h-4 w-4" />
                 {error}
               </div>
             )}
@@ -95,28 +114,23 @@ export default function LoginPage() {
               type="submit"
               size="lg"
               className="w-full h-12 text-base font-medium"
-              disabled={isLoading}
+              disabled={isLoading || accessCode.length !== 6}
             >
               {isLoading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
 
-          <div className="mt-4 text-center">
-            <p className="text-sm text-muted-foreground">
-              Don&apos;t have an account?{' '}
-              <Link href="/quotes/signup" className="text-primary hover:underline">
-                Sign up
-              </Link>
-            </p>
-          </div>
-
           <div className="mt-6 text-center">
-            <p className="text-sm text-muted-foreground">
-              By signing in, you agree to our{' '}
-              <a href="#" className="text-primary hover:underline">Terms</a>
-              {' '}and{' '}
-              <a href="#" className="text-primary hover:underline">Privacy Policy</a>
+            <p className="text-sm text-muted-foreground mb-3">
+              Don&apos;t have an access code?
             </p>
+            <Button
+              variant="outline"
+              onClick={generateCode}
+              className="w-full"
+            >
+              Generate New Access Code
+            </Button>
           </div>
         </div>
 
@@ -132,7 +146,7 @@ export default function LoginPage() {
           </div>
           <div className="group cursor-default">
             <div className="text-2xl mb-2 transform transition-transform group-hover:scale-110">⚡</div>
-            <p className="text-sm text-muted-foreground">Instant Quotes</p>
+            <p className="text-sm text-muted-foreground">Instant Access</p>
           </div>
         </div>
         

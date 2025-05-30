@@ -1,44 +1,50 @@
-import { withAuth } from 'next-auth/middleware'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { getSession } from '@/lib/auth'
 
-export default withAuth(
-  function middleware(req) {
-    // Add any custom middleware logic here if needed
-    return NextResponse.next()
-  },
-  {
-    callbacks: {
-      authorized: ({ token, req }) => {
-        // Allow access to login page and auth routes
-        if (req.nextUrl.pathname.startsWith('/quotes/login') || 
-            req.nextUrl.pathname.startsWith('/api/auth')) {
-          return true
-        }
-        
-        // Require authentication for all other routes under /quotes
-        if (req.nextUrl.pathname.startsWith('/quotes')) {
-          return !!token
-        }
-        
-        // Allow other routes
-        return true
-      },
-    },
-    pages: {
-      signIn: '/quotes/login',
-    },
+export async function middleware(request: NextRequest) {
+  // Protected routes that require authentication
+  const protectedRoutes = [
+    '/quotes/dashboard',
+    '/quotes/chat',
+    '/quotes/insights', 
+    '/quotes/settings',
+    '/quotes/setup'
+  ]
+
+  const isProtectedRoute = protectedRoutes.some(route => 
+    request.nextUrl.pathname.startsWith(route)
+  )
+
+  if (isProtectedRoute) {
+    try {
+      const session = await getSession()
+      
+      if (!session.isLoggedIn || !session.companyId) {
+        return NextResponse.redirect(new URL('/quotes/login', request.url))
+      }
+    } catch (error) {
+      return NextResponse.redirect(new URL('/quotes/login', request.url))
+    }
   }
-)
+
+  // Redirect authenticated users away from login page
+  if (request.nextUrl.pathname === '/quotes/login') {
+    try {
+      const session = await getSession()
+      
+      if (session.isLoggedIn && session.companyId) {
+        return NextResponse.redirect(new URL('/quotes/dashboard', request.url))
+      }
+    } catch (error) {
+      // Continue to login page if session check fails
+    }
+  }
+
+  return NextResponse.next()
+}
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * Feel free to modify this pattern to include more paths.
-     */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }

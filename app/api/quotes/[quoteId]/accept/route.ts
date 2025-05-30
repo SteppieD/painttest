@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { db } from '@/lib/database'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(
@@ -6,39 +6,25 @@ export async function POST(
   { params }: { params: { quoteId: string } }
 ) {
   try {
-    const supabase = await createClient()
-    
     // Update quote status to accepted
-    const { data: quote, error } = await supabase
-      .from('quotes')
-      .update({
+    const quote = await db.quote.update({
+      where: { id: params.quoteId },
+      data: { 
         status: 'accepted',
-        accepted_at: new Date().toISOString()
-      })
-      .eq('id', params.quoteId)
-      .select('*, project:projects(client_name, client_email)')
-      .single()
-
-    if (error) {
-      console.error('Error accepting quote:', error)
-      return NextResponse.json(
-        { error: 'Failed to accept quote' },
-        { status: 500 }
-      )
-    }
-
-    // TODO: Send email notification to contractor
-    // For now, we'll just return success
+        acceptedAt: new Date()
+      }
+    })
 
     return NextResponse.json({ 
-      success: true, 
+      success: true,
       message: 'Quote accepted successfully',
       quote 
     })
+
   } catch (error) {
-    console.error('Quote acceptance error:', error)
+    console.error('Error accepting quote:', error)
     return NextResponse.json(
-      { error: 'Failed to process quote acceptance' },
+      { error: 'Failed to accept quote' },
       { status: 500 }
     )
   }

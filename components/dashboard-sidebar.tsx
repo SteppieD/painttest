@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import { Settings, LogOut, Home, FileText, MessageSquare, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { signOut } from 'next-auth/react'
+// Removed Supabase import - using new auth system
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,7 +36,9 @@ export function DashboardSidebar({ user, profile, projects }: DashboardSidebarPr
   const pathname = usePathname()
 
   const handleSignOut = async () => {
-    await signOut({ callbackUrl: '/quotes/login' })
+    await fetch('/api/auth/logout', { method: 'POST' })
+    router.push('/quotes/login')
+    router.refresh()
   }
 
   const navItems = [
@@ -173,7 +175,7 @@ export function DashboardSidebar({ user, profile, projects }: DashboardSidebarPr
               className="w-full justify-start gap-3 px-3 py-2 h-auto"
             >
               <Avatar className="h-8 w-8">
-                <AvatarImage src={user.user_metadata.avatar_url} alt={user.email} />
+                <AvatarImage src={user.image || ''} alt={user.email || ''} />
                 <AvatarFallback className="bg-primary text-primary-foreground text-sm">
                   {user.email?.charAt(0).toUpperCase()}
                 </AvatarFallback>

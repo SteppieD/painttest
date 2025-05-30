@@ -1,78 +1,112 @@
-import { NextAuthOptions } from 'next-auth'
-import CredentialsProvider from 'next-auth/providers/credentials'
-import { PrismaAdapter } from '@next-auth/prisma-adapter'
-import { prisma } from './prisma'
-import bcrypt from 'bcryptjs'
+import { db } from './database'
+import { getIronSession } from 'iron-session'
+import { cookies } from 'next/headers'
 
-declare module 'next-auth' {
-  interface Session {
-    user: {
-      id: string
-      name?: string | null
-      email?: string | null
-      image?: string | null
-    }
-  }
+export interface SessionData {
+  companyId: string
+  accessCode: string
+  companyName: string
+  isLoggedIn: boolean
 }
 
-export const authOptions: NextAuthOptions = {
-  providers: [
-    CredentialsProvider({
-      name: 'credentials',
-      credentials: {
-        email: { label: 'Email', type: 'email' },
-        password: { label: 'Password', type: 'password' }
-      },
-      async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          return null
-        }
+const sessionOptions = {
+  password: process.env.SESSION_SECRET!,
+  cookieName: 'painting-quote-session',
+  cookieOptions: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 60 * 60 * 24 * 30, // 30 days
+  },
+}
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email }
-        })
+export async function getSession() {
+  const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
+  return session
+}
 
-        if (!user || !user.password) {
-          return null
-        }
+export async function generateAccessCode(): Promise<string> {
+  let code: string
+  let exists = true
+  
+  // Generate unique 6-digit code
+  while (exists) {
+    code = Math.floor(100000 + Math.random() * 900000).toString()
+    const existing = await db.company.findUnique({
+      where: { accessCode: code }
+    })
+    exists = !!existing
+  }
+  
+  return code!
+}
 
-        const isPasswordValid = await bcrypt.compare(credentials.password, user.password)
-
-        if (!isPasswordValid) {
-          return null
-        }
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
+export async function loginWithAccessCode(accessCode: string) {
+  // Find or create company with this access code
+  let company = await db.company.findUnique({
+    where: { accessCode }
+  })
+  
+  if (!company) {
+    // Create new company with this access code
+    company = await db.company.create({
+      data: {
+        accessCode,
+        name: `Company ${accessCode}`,
+        settings: {
+          laborRate: 50,
+          markup: 20,
+          taxRate: 8.5
         }
       }
     })
-  ],
-  session: {
-    strategy: 'jwt'
-  },
-  callbacks: {
-    jwt: ({ token, user }) => {
-      if (user) {
-        token.id = user.id
-      }
-      return token
-    },
-    session: ({ session, token }) => ({
-      ...session,
-      user: {
-        ...session.user,
-        id: token.id as string,
-      },
-    }),
-    redirect: ({ url, baseUrl }) => {
-      // Always redirect to the dashboard after sign in
-      return `${baseUrl}/quotes/dashboard`
-    },
-  },
-  pages: {
-    signIn: '/quotes/login',
-  },
+  } else {
+    // Update last used timestamp
+    await db.company.update({
+      where: { id: company.id },
+      data: { lastUsed: new Date() }
+    })
+  }
+  
+  // Create session
+  const session = await getSession()
+  session.companyId = company.id
+  session.accessCode = company.accessCode
+  session.companyName = company.name
+  session.isLoggedIn = true
+  await session.save()
+  
+  return company
+}
+
+export async function logout() {
+  const session = await getSession()
+  session.destroy()
+}
+
+export async function requireAuth() {
+  const session = await getSession()
+  
+  if (!session.isLoggedIn || !session.companyId) {
+    return null
+  }
+  
+  // Verify company still exists
+  const company = await db.company.findUnique({
+    where: { id: session.companyId }
+  })
+  
+  if (!company) {
+    await logout()
+    return null
+  }
+  
+  return {
+    session,
+    company
+  }
+}
+
+export async function getCurrentCompany() {
+  const auth = await requireAuth()
+  return auth?.company || null
 }

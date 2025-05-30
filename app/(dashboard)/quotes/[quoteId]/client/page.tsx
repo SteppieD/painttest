@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+// Removed broken import
 import { useParams, useRouter } from 'next/navigation'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { formatQuoteForCopy } from '@/lib/quote-formatter'

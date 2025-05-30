@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+// Removed broken import
 import { QuoteEditor } from '@/components/quotes/quote-editor'
 
 interface EditQuotePageProps {

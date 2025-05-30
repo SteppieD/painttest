@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+// Removed broken import
 import { QuoteViewer } from '@/components/quotes/quote-viewer'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
