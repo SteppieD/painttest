@@ -1,5 +1,7 @@
 # Painting Quote Generator
 
+**Deploy Status: Fixed and ready for production!**
+
 A modern web application that helps painting contractors create professional quotes using AI assistance. Built with Next.js, Supabase, and Google Gemini AI.
 
 ## Features
