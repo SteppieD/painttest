@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
-import { notFound } from 'next/navigation'
-// Removed broken import
+import { notFound, redirect } from 'next/navigation'
+import { requireAuth } from '@/lib/auth'
+import { db } from '@/lib/database'
 import { QuoteEditor } from '@/components/quotes/quote-editor'
 
 interface EditQuotePageProps {
@@ -10,49 +11,56 @@ interface EditQuotePageProps {
 }
 
 export default async function EditQuotePage({ params }: EditQuotePageProps) {
-  const supabase = await createClient()
+  const auth = await requireAuth()
   
-  const { data: { user } } = await supabase.auth.getUser()
-  
-  if (!user) {
+  if (!auth) {
+    redirect('/quotes/login')
+  }
+
+  const { company } = auth
+
+  // Get quote with project info
+  const quote = await db.quote.findFirst({
+    where: {
+      id: params.quoteId,
+      project: {
+        companyId: company.id
+      }
+    },
+    include: {
+      project: true
+    }
+  })
+
+  if (!quote) {
     notFound()
   }
 
-  // Get the quote and verify it belongs to the user
-  const { data: quote, error } = await supabase
-    .from('quotes')
-    .select(`
-      *,
-      project:projects (
-        id,
-        client_name,
-        property_address,
-        client_email,
-        client_phone,
-        user_id
-      )
-    `)
-    .eq('id', params.quoteId)
-    .single()
-
-  if (error || !quote) {
-    notFound()
+  const quoteData = {
+    id: quote.id,
+    base_costs: quote.lineItems,
+    markup_percentage: quote.markup,
+    final_price: quote.total,
+    details: {
+      subtotal: quote.subtotal,
+      tax: quote.tax,
+      notes: quote.notes
+    },
+    status: quote.status,
+    created_at: quote.createdAt.toISOString(),
+    valid_until: quote.validUntil?.toISOString(),
+    project: {
+      id: quote.project.id,
+      client_name: quote.project.clientName,
+      property_address: quote.project.propertyAddress,
+      client_email: quote.project.clientEmail || undefined,
+      client_phone: quote.project.clientPhone || undefined
+    }
   }
-  
-  if (quote.project?.user_id !== user.id) {
-    notFound()
-  }
-
-  // Get user's cost settings
-  const { data: costSettings } = await supabase
-    .from('cost_settings')
-    .select('*')
-    .eq('user_id', user.id)
-    .single()
 
   return (
-    <Suspense fallback={<div>Loading editor...</div>}>
-      <QuoteEditor quote={quote} costSettings={costSettings} />
+    <Suspense fallback={<div>Loading...</div>}>
+      <QuoteEditor quote={quoteData} />
     </Suspense>
   )
 }

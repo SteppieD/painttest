@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
-import { notFound } from 'next/navigation'
-// Removed broken import
+import { notFound, redirect } from 'next/navigation'
+import { requireAuth } from '@/lib/auth'
+import { db } from '@/lib/database'
 import { QuoteViewer } from '@/components/quotes/quote-viewer'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -12,52 +13,75 @@ interface QuotePageProps {
 }
 
 export default async function QuotePage({ params }: QuotePageProps) {
-  const supabase = await createClient()
+  const auth = await requireAuth()
   
-  const { data: { user } } = await supabase.auth.getUser()
-  
-  if (!user) {
+  if (!auth) {
+    redirect('/quotes/login')
+  }
+
+  const { company } = auth
+
+  // Get quote with project info
+  const quote = await db.quote.findFirst({
+    where: {
+      id: params.quoteId,
+      project: {
+        companyId: company.id
+      }
+    },
+    include: {
+      project: true
+    }
+  })
+
+  if (!quote) {
     notFound()
   }
 
-  // Get the quote and verify it belongs to the user
-  const { data: quote, error } = await supabase
-    .from('quotes')
-    .select(`
-      *,
-      project:projects (
-        id,
-        client_name,
-        property_address,
-        user_id
-      )
-    `)
-    .eq('id', params.quoteId)
-    .single()
-
-  if (error || !quote) {
-    return (
-      <div className="container mx-auto p-6">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-2">Quote Not Found</h1>
-          <p className="text-muted-foreground mb-4">
-            This quote may have been deleted or doesn&apos;t exist.
-          </p>
-          <Link href="/quotes">
-            <Button>View All Quotes</Button>
-          </Link>
-        </div>
-      </div>
-    )
-  }
-  
-  if (quote.project?.user_id !== user.id) {
-    notFound()
+  const quoteData = {
+    id: quote.id,
+    base_costs: quote.lineItems,
+    markup_percentage: quote.markup,
+    final_price: quote.total,
+    details: {
+      subtotal: quote.subtotal,
+      tax: quote.tax,
+      notes: quote.notes
+    },
+    status: quote.status,
+    created_at: quote.createdAt.toISOString(),
+    valid_until: quote.validUntil?.toISOString(),
+    project: {
+      id: quote.project.id,
+      client_name: quote.project.clientName,
+      property_address: quote.project.propertyAddress,
+      client_email: quote.project.clientEmail || undefined,
+      client_phone: quote.project.clientPhone || undefined
+    }
   }
 
   return (
-    <Suspense fallback={<div>Loading quote...</div>}>
-      <QuoteViewer quote={quote} />
-    </Suspense>
+    <div className="p-8">
+      <div className="mb-6 flex justify-between items-center">
+        <h1 className="text-3xl font-bold">Quote Details</h1>
+        <div className="flex gap-2">
+          {quote.status === 'draft' && (
+            <Button asChild>
+              <Link href={`/quotes/${quote.id}/edit`}>
+                Edit Quote
+              </Link>
+            </Button>
+          )}
+          <Button variant="outline" asChild>
+            <Link href="/quotes">
+              Back to Quotes
+            </Link>
+          </Button>
+        </div>
+      </div>
+      <Suspense fallback={<div>Loading...</div>}>
+        <QuoteViewer quote={quoteData} />
+      </Suspense>
+    </div>
   )
 }
