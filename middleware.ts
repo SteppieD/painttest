@@ -4,11 +4,12 @@ import { getSession } from '@/lib/auth'
 export async function middleware(request: NextRequest) {
   // Protected routes that require authentication
   const protectedRoutes = [
-    '/quotes/dashboard',
-    '/quotes/chat',
-    '/quotes/insights', 
-    '/quotes/settings',
-    '/quotes/setup'
+    '/dashboard',
+    '/chat',
+    '/insights', 
+    '/settings',
+    '/setup',
+    '/quotes'
   ]
 
   const isProtectedRoute = protectedRoutes.some(route => 
@@ -20,20 +21,20 @@ export async function middleware(request: NextRequest) {
       const session = await getSession()
       
       if (!session.isLoggedIn || !session.companyId) {
-        return NextResponse.redirect(new URL('/quotes/login', request.url))
+        return NextResponse.redirect(new URL('/login', request.url))
       }
     } catch (error) {
-      return NextResponse.redirect(new URL('/quotes/login', request.url))
+      return NextResponse.redirect(new URL('/login', request.url))
     }
   }
 
   // Redirect authenticated users away from login page
-  if (request.nextUrl.pathname === '/quotes/login') {
+  if (request.nextUrl.pathname === '/login') {
     try {
       const session = await getSession()
       
       if (session.isLoggedIn && session.companyId) {
-        return NextResponse.redirect(new URL('/quotes/dashboard', request.url))
+        return NextResponse.redirect(new URL('/dashboard', request.url))
       }
     } catch (error) {
       // Continue to login page if session check fails
