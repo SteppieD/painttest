@@ -100,7 +100,7 @@ export default function AccessCodePage() {
           
           <div className="mt-6 text-center">
             <p className="text-sm text-muted-foreground">
-              Don't have an access code?{' '}
+              Don&apos;t have an access code?{' '}
               <button
                 onClick={() => router.push('/login')}
                 className="text-blue-600 hover:underline"

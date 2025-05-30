@@ -65,7 +65,7 @@ export default function TestQuotePage() {
               address: project.property_address
             },
             lineItems: generateLineItems(quote.details, quote.base_costs),
-            subtotal: Object.values(quote.base_costs).reduce((a: number, b: number) => a + b, 0) as number,
+            subtotal: Object.values(quote.base_costs as Record<string, number>).reduce((a: number, b: number) => a + b, 0),
             tax: 0,
             total: quote.final_price
           }

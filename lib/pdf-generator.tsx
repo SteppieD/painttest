@@ -157,7 +157,7 @@ const QuotePDF = ({
   userName = 'John Doe',
 }: QuotePDFProps) => {
   // Calculate total cost (handle both old 'supplies' and new 'sundries')
-  const totalBaseCost = baseCosts.labor + baseCosts.paint + (baseCosts.sundries || baseCosts.supplies || 0)
+  const totalBaseCost = baseCosts.labor + baseCosts.paint + ((baseCosts as any).sundries || baseCosts.supplies || 0)
   const { finalPrice } = calculateMarkup(totalBaseCost, markupPercentage)
 
   const today = new Date()
@@ -244,13 +244,13 @@ const QuotePDF = ({
             <View style={styles.row}>
               <Text style={styles.label}>Paint Gallons:</Text>
               <Text style={styles.value}>
-                {projectDetails.paintGallons || Math.ceil((projectDetails.totalSqft * (projectDetails.coats || 2)) / 350)} gallons
+                {(projectDetails as any).paintGallons || Math.ceil((projectDetails.totalSqft * (projectDetails.coats || 2)) / 350)} gallons
               </Text>
             </View>
             <View style={styles.row}>
               <Text style={styles.label}>Labor Hours:</Text>
               <Text style={styles.value}>
-                {projectDetails.totalLaborHours || (projectDetails.roomCount || projectDetails.rooms?.length || 1) * 4} hours
+                {(projectDetails as any).totalLaborHours || ((projectDetails as any).roomCount || projectDetails.rooms?.length || 1) * 4} hours
               </Text>
             </View>
           </View>
@@ -291,7 +291,7 @@ const QuotePDF = ({
             <Text style={{ flex: 1, textAlign: 'center' }}>-</Text>
             <Text style={{ flex: 2, textAlign: 'center', fontSize: 10 }}>Materials</Text>
             <Text style={{ flex: 1, textAlign: 'right', fontWeight: 'bold' }}>
-              {formatCurrency(baseCosts.sundries || baseCosts.supplies || 0)}
+              {formatCurrency((baseCosts as any).sundries || baseCosts.supplies || 0)}
             </Text>
           </View>
         </View>

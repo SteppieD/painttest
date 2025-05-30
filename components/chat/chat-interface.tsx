@@ -88,9 +88,22 @@ export function ChatInterface({ projectId, userId }: ChatInterfaceProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Load saved messages from localStorage if they exist
+  // Generate unique session ID for new chats
+  const [sessionId] = useState(() => {
+    if (projectId === 'new') {
+      return `new_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    }
+    return projectId
+  })
+
+  // Load saved messages from localStorage if they exist (but not for truly new chats)
   useEffect(() => {
-    const storageKey = `paintquote_chat_${projectId}`
+    // Don't load localStorage for new chats - always start fresh
+    if (projectId === 'new') {
+      return
+    }
+    
+    const storageKey = `paintquote_chat_${sessionId}`
     const savedMessages = localStorage.getItem(storageKey)
     
     if (savedMessages) {
@@ -108,7 +121,7 @@ export function ChatInterface({ projectId, userId }: ChatInterfaceProps) {
         console.error('Error parsing saved messages:', error)
       }
     }
-  }, [projectId])
+  }, [projectId, sessionId])
   
   // Initialize chat
   useEffect(() => {
@@ -121,10 +134,10 @@ export function ChatInterface({ projectId, userId }: ChatInterfaceProps) {
       }
       
       setMessages(prev => {
-        // Only add welcome message if there are no messages
+        // Always start fresh for new chats
         if (prev.length === 0) {
-          // Save to localStorage
-          localStorage.setItem(`paintquote_chat_${projectId}`, JSON.stringify([welcomeMessage]))
+          // Save to localStorage with unique session ID
+          localStorage.setItem(`paintquote_chat_${sessionId}`, JSON.stringify([welcomeMessage]))
           return [welcomeMessage]
         }
         return prev
@@ -153,7 +166,7 @@ export function ChatInterface({ projectId, userId }: ChatInterfaceProps) {
         setMessages(formattedMessages)
         
         // Also save to localStorage for backup
-        localStorage.setItem(`paintquote_chat_${projectId}`, JSON.stringify(formattedMessages))
+        localStorage.setItem(`paintquote_chat_${sessionId}`, JSON.stringify(formattedMessages))
       }
     } catch (error) {
       console.error('Error loading messages:', error)
@@ -209,7 +222,7 @@ export function ChatInterface({ projectId, userId }: ChatInterfaceProps) {
     // Update state and localStorage immediately to prevent message loss
     const updatedMessages = [...messages, userMessage]
     setMessages(updatedMessages)
-    localStorage.setItem(`paintquote_chat_${currentProjectId}`, JSON.stringify(updatedMessages))
+    localStorage.setItem(`paintquote_chat_${sessionId}`, JSON.stringify(updatedMessages))
     
     setInput('')
     setIsLoading(true)
@@ -268,7 +281,7 @@ export function ChatInterface({ projectId, userId }: ChatInterfaceProps) {
       // Update state and localStorage with assistant response
       const newMessages = [...updatedMessages, assistantMessage]
       setMessages(newMessages)
-      localStorage.setItem(`paintquote_chat_${currentProjectId}`, JSON.stringify(newMessages))
+      localStorage.setItem(`paintquote_chat_${sessionId}`, JSON.stringify(newMessages))
 
       if (data.conversationState) {
         setConversationState(data.conversationState)

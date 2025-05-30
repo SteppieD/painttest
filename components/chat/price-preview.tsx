@@ -1,11 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatCurrency } from '@/lib/utils'
-import type { BaseCosts } from '@/types/database'
+import type { BaseCosts, EnhancedBaseCosts } from '@/types/database'
 
 interface PricePreviewProps {
   baseCost: number
   markup: number
-  breakdown: BaseCosts
+  breakdown: BaseCosts | EnhancedBaseCosts
 }
 
 export function PricePreview({ baseCost, markup, breakdown }: PricePreviewProps) {
@@ -31,7 +31,7 @@ export function PricePreview({ baseCost, markup, breakdown }: PricePreviewProps)
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-[#6e6e73]">Sundries</span>
-              <span className="text-[#1d1d1f]">{formatCurrency(breakdown.sundries || breakdown.supplies || 0)}</span>
+              <span className="text-[#1d1d1f]">{formatCurrency((breakdown as EnhancedBaseCosts).sundries || breakdown.supplies || 0)}</span>
             </div>
           </div>
         </div>

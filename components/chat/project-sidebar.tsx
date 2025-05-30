@@ -2,10 +2,19 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus } from 'lucide-react'
+import { Plus, Settings, LogOut, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn, getProjectColor, getFirstStreetLetter } from '@/lib/utils'
 import { useSupabase } from '@/app/providers'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 interface Project {
   id: string
@@ -26,17 +35,31 @@ export function ProjectSidebar({ currentProjectId, onProjectSelect, closeSidebar
   const supabase = useSupabase()
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState<any>(null)
+  const [profile, setProfile] = useState<any>(null)
 
   useEffect(() => {
-    loadProjects()
+    loadUserAndProjects()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const loadProjects = async () => {
+  const loadUserAndProjects = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
+      
+      setUser(user)
 
+      // Load user profile
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single()
+      
+      setProfile(profileData)
+
+      // Load projects
       const { data, error } = await supabase
         .from('projects')
         .select('*')
@@ -46,10 +69,15 @@ export function ProjectSidebar({ currentProjectId, onProjectSelect, closeSidebar
       if (error) throw error
       setProjects(data || [])
     } catch (error) {
-      console.error('Error loading projects:', error)
+      console.error('Error loading user data and projects:', error)
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    router.push('/login')
   }
 
   const handleProjectSelect = (projectId: string) => {
@@ -116,6 +144,50 @@ export function ProjectSidebar({ currentProjectId, onProjectSelect, closeSidebar
           )}
         </div>
       </div>
+
+      {/* User Profile Section - Bottom Left */}
+      {user && (
+        <div className="p-3 border-t bg-background">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="w-full flex items-center px-3 py-2 rounded-md hover:bg-accent/50 transition-colors group">
+                <Avatar className="h-8 w-8 mr-3">
+                  <AvatarImage src={profile?.logo_url} alt={profile?.company_name || 'User'} />
+                  <AvatarFallback className="bg-blue-500 text-white">
+                    {profile?.company_name?.[0] || user.email?.[0]?.toUpperCase() || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col items-start truncate flex-1">
+                  <div className="font-medium text-sm truncate w-full text-left">
+                    {profile?.company_name || 'My Company'}
+                  </div>
+                  <div className="text-xs text-muted-foreground truncate w-full text-left">
+                    {user.email || 'Demo User'}
+                  </div>
+                </div>
+                <div className="w-2 h-2 rounded-full bg-green-500 ml-2 group-hover:bg-green-400 transition-colors"></div>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => router.push('/settings')}>
+                <Settings className="mr-2 h-4 w-4" />
+                Settings
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push('/admin/access-codes')}>
+                <User className="mr-2 h-4 w-4" />
+                Access Codes
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleSignOut} className="text-red-600">
+                <LogOut className="mr-2 h-4 w-4" />
+                Sign Out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
     </div>
   )
 }

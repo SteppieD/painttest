@@ -3,7 +3,7 @@
  * These calculations are for internal use only and should not appear in client-facing quotes
  */
 
-interface InternalCalculationResult {
+export interface InternalCalculationResult {
   // Client-facing values
   subtotal: number
   materialCosts: number
