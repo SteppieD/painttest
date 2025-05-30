@@ -10,6 +10,7 @@ import {
   DoorTrimPricing,
   BaseboardPricing
 } from '@/types/database';
+import { calculateInternalMetrics, type InternalCalculationResult } from './internal-calculations';
 
 /**
  * Simple Quote Calculator - calculates quote totals based on surface area and rates
@@ -39,13 +40,28 @@ export function calculateSimpleQuote(input: SimpleQuoteInput): SimpleQuoteResult
   const laborEstimate = totalProjectPrice * (input.laborPercentage / 100);
   const projectedProfit = totalProjectPrice - totalMaterialsCost - laborEstimate - input.sundries;
   
+  // Calculate internal metrics using the new framework
+  const internalMetrics = calculateInternalMetrics(
+    {
+      labor: laborEstimate,
+      paint: totalMaterialsCost,
+      sundries: input.sundries
+    },
+    0 // No markup applied at this stage - will be applied later
+  );
+
   return {
     surfaceCalculations,
     totalProjectPrice,
     totalMaterialsCost,
     laborEstimate,
     sundries: input.sundries,
-    projectedProfit
+    projectedProfit,
+    internalMetrics: {
+      netRevenue: internalMetrics.netRevenue,
+      projectedLabour: internalMetrics.projectedLabour,
+      projectedProfit: internalMetrics.projectedProfit
+    }
   };
 }
 
@@ -167,7 +183,7 @@ export function calculateAdvancedQuote(input: AdvancedQuoteInput): AdvancedQuote
   const baseCosts: EnhancedBaseCosts = {
     paint: totalPaintCost,
     labor: totalLaborCost,
-    supplies: 0, // This will be replaced by sundries
+    supplies: input.sundries, // For backward compatibility
     doorTrimWork: totalDoorTrimCost,
     baseboards: totalBaseboardCost,
     sundries: input.sundries

@@ -30,8 +30,8 @@ export function PricePreview({ baseCost, markup, breakdown }: PricePreviewProps)
               <span className="text-[#1d1d1f]">{formatCurrency(breakdown.paint)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-[#6e6e73]">Supplies</span>
-              <span className="text-[#1d1d1f]">{formatCurrency(breakdown.supplies)}</span>
+              <span className="text-[#6e6e73]">Sundries</span>
+              <span className="text-[#1d1d1f]">{formatCurrency(breakdown.sundries || breakdown.supplies || 0)}</span>
             </div>
           </div>
         </div>

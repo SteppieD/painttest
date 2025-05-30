@@ -156,10 +156,9 @@ const QuotePDF = ({
   companyLogo,
   userName = 'John Doe',
 }: QuotePDFProps) => {
-  const { finalPrice } = calculateMarkup(
-    baseCosts.labor + baseCosts.paint + baseCosts.supplies,
-    markupPercentage
-  )
+  // Calculate total cost (handle both old 'supplies' and new 'sundries')
+  const totalBaseCost = baseCosts.labor + baseCosts.paint + (baseCosts.sundries || baseCosts.supplies || 0)
+  const { finalPrice } = calculateMarkup(totalBaseCost, markupPercentage)
 
   const today = new Date()
   const validUntil = new Date(today)
@@ -168,10 +167,12 @@ const QuotePDF = ({
   // Calculate room prices (simplified for customer view)
   const roomPrices = projectDetails.rooms?.map(room => {
     const roomPercentage = room.sqft / projectDetails.totalSqft
-    const roomPrice = finalPrice * roomPercentage
+    const laborAndPaintCost = baseCosts.labor + baseCosts.paint
+    const roomPrice = laborAndPaintCost * roomPercentage
     return {
       name: room.name,
-      description: `${room.sqft} sq ft, ${projectDetails.coats} coats of ${projectDetails.paintQuality} quality paint`,
+      sqft: room.sqft,
+      description: `${room.sqft} sq ft, ${projectDetails.coats || 2} coats of ${projectDetails.paintQuality || 'Better'} quality paint`,
       price: roomPrice
     }
   }) || []
@@ -220,22 +221,79 @@ const QuotePDF = ({
           </View>
         </View>
 
+        {/* Project Summary Numbers */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>PROJECT SUMMARY</Text>
+          <View style={[styles.clientInfo, { backgroundColor: '#F3F4F6' }]}>
+            <View style={styles.row}>
+              <Text style={styles.label}>Total Paint Area:</Text>
+              <Text style={styles.value}>{projectDetails.totalSqft} sq ft</Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>Total Trim:</Text>
+              <Text style={styles.value}>
+                {projectDetails.rooms?.reduce((sum, room) => sum + (room.doorsCount || 0), 0) * 20 || 0} linear ft
+              </Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>Number of Doors:</Text>
+              <Text style={styles.value}>
+                {projectDetails.rooms?.reduce((sum, room) => sum + (room.doorsCount || 0), 0) || 0}
+              </Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>Paint Gallons:</Text>
+              <Text style={styles.value}>
+                {projectDetails.paintGallons || Math.ceil((projectDetails.totalSqft * (projectDetails.coats || 2)) / 350)} gallons
+              </Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>Labor Hours:</Text>
+              <Text style={styles.value}>
+                {projectDetails.totalLaborHours || (projectDetails.roomCount || projectDetails.rooms?.length || 1) * 4} hours
+              </Text>
+            </View>
+          </View>
+        </View>
+
         {/* Scope of Work */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>SCOPE OF WORK</Text>
+          
+          {/* Table Header */}
+          <View style={[styles.scopeItem, { backgroundColor: '#F9FAFB', fontWeight: 'bold' }]}>
+            <Text style={{ flex: 2, fontWeight: 'bold' }}>Area</Text>
+            <Text style={{ flex: 3, fontWeight: 'bold' }}>Description</Text>
+            <Text style={{ flex: 1, fontWeight: 'bold', textAlign: 'center' }}>Coats</Text>
+            <Text style={{ flex: 2, fontWeight: 'bold', textAlign: 'center' }}>Paint Type</Text>
+            <Text style={{ flex: 1, fontWeight: 'bold', textAlign: 'right' }}>Subtotal</Text>
+          </View>
+          
+          {/* Table Rows */}
           {roomPrices.map((item, index) => (
             <View key={index} style={styles.scopeItem}>
-              <View style={styles.scopeDescription}>
-                <Text style={{ fontWeight: 'bold' }}>{item.name}</Text>
-                <Text style={{ fontSize: 10, color: '#666', marginTop: 2 }}>
-                  {item.description}
-                </Text>
-              </View>
-              <Text style={styles.scopePrice}>
+              <Text style={{ flex: 2 }}>{item.name}</Text>
+              <Text style={{ flex: 3, fontSize: 10 }}>{item.sqft} sq ft walls</Text>
+              <Text style={{ flex: 1, textAlign: 'center' }}>{projectDetails.coats || 2}</Text>
+              <Text style={{ flex: 2, textAlign: 'center', fontSize: 10 }}>
+                {projectDetails.paintQuality || 'Better'} Quality
+              </Text>
+              <Text style={{ flex: 1, textAlign: 'right', fontWeight: 'bold' }}>
                 {formatCurrency(item.price)}
               </Text>
             </View>
           ))}
+          
+          {/* Add sundries row */}
+          <View style={styles.scopeItem}>
+            <Text style={{ flex: 2 }}>Sundries</Text>
+            <Text style={{ flex: 3, fontSize: 10 }}>Tape, brushes, trays, drop cloths</Text>
+            <Text style={{ flex: 1, textAlign: 'center' }}>-</Text>
+            <Text style={{ flex: 2, textAlign: 'center', fontSize: 10 }}>Materials</Text>
+            <Text style={{ flex: 1, textAlign: 'right', fontWeight: 'bold' }}>
+              {formatCurrency(baseCosts.sundries || baseCosts.supplies || 0)}
+            </Text>
+          </View>
         </View>
 
         {/* Total */}

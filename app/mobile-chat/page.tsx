@@ -86,7 +86,11 @@ export default function MobileChatPage() {
               {msg.text}
             </div>
             <div className="message-time">
-              {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              {new Intl.DateTimeFormat('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                hour12: true 
+              }).format(new Date())}
             </div>
           </div>
         ))}

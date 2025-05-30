@@ -112,8 +112,9 @@ function generateScopeItems(details: ProjectDetails, baseCosts: BaseCosts, final
       const paintQuality = details.paintQuality || 'quality'
       items.push(`${paintQuality.charAt(0).toUpperCase() + paintQuality.slice(1)} paint: ${formatCurrency(baseCosts.paint)}`)
     }
-    if (baseCosts.supplies > 0) {
-      items.push(`Supplies and materials: ${formatCurrency(baseCosts.supplies)}`)
+    const sundriesCost = baseCosts.sundries || baseCosts.supplies || 0
+    if (sundriesCost > 0) {
+      items.push(`Sundries and materials: ${formatCurrency(sundriesCost)}`)
     }
   }
   

@@ -36,6 +36,8 @@ export async function middleware(request: NextRequest) {
     !user &&
     !request.nextUrl.pathname.startsWith('/login') &&
     !request.nextUrl.pathname.startsWith('/auth') &&
+    !request.nextUrl.pathname.startsWith('/access-code') &&
+    !request.nextUrl.pathname.startsWith('/api/auth/access-code') &&
     !request.nextUrl.pathname.startsWith('/test-quote') &&
     !request.nextUrl.pathname.startsWith('/demo') &&
     !request.nextUrl.pathname.startsWith('/demo-chat') &&

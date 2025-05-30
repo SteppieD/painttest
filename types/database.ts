@@ -428,4 +428,10 @@ export interface SimpleQuoteResult {
   laborEstimate: number
   sundries: number
   projectedProfit: number
+  // Internal calculations (for profit analysis only)
+  internalMetrics?: {
+    netRevenue: number
+    projectedLabour: number
+    projectedProfit: number
+  }
 }

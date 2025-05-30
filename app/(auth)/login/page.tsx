@@ -3,10 +3,12 @@
 import { Button } from '@/components/ui/button'
 import { useSupabase } from '@/app/providers'
 import { FcGoogle } from 'react-icons/fc'
-import { Paintbrush } from 'lucide-react'
+import { Paintbrush, Key } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
   const supabase = useSupabase()
+  const router = useRouter()
 
   const handleGoogleLogin = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
@@ -45,6 +47,25 @@ export default function LoginPage() {
           >
             <FcGoogle className="mr-3 h-5 w-5" />
             Continue with Google
+          </Button>
+
+          <div className="mt-4 relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-2 text-muted-foreground">Or</span>
+            </div>
+          </div>
+
+          <Button
+            variant="secondary"
+            size="lg"
+            className="w-full h-12 text-base font-medium mt-4"
+            onClick={() => router.push('/access-code')}
+          >
+            <Key className="mr-3 h-5 w-5" />
+            Enter Access Code
           </Button>
 
           <div className="mt-6 text-center">

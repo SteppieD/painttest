@@ -146,6 +146,54 @@ CREATE POLICY "Users can create own cost settings" ON cost_settings
 CREATE POLICY "Users can update own cost settings" ON cost_settings
   FOR UPDATE USING (auth.uid() = user_id);
 
+-- Create access_codes table for testing and demos
+CREATE TABLE IF NOT EXISTS access_codes (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  code TEXT UNIQUE NOT NULL,
+  company_name TEXT NOT NULL,
+  contact_name TEXT,
+  phone TEXT,
+  is_active BOOLEAN DEFAULT true,
+  uses_count INTEGER DEFAULT 0,
+  max_uses INTEGER DEFAULT NULL, -- NULL means unlimited
+  expires_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+  created_by TEXT, -- Who created this code
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
+  last_used_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+  notes TEXT
+);
+
+-- Create access_code_sessions table to track which users are using access codes
+CREATE TABLE IF NOT EXISTS access_code_sessions (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  access_code_id UUID REFERENCES access_codes(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  session_data JSONB DEFAULT '{}',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
+  expires_at TIMESTAMP WITH TIME ZONE DEFAULT (TIMEZONE('utc', NOW()) + INTERVAL '7 days')
+);
+
+-- Create indexes for access codes
+CREATE INDEX idx_access_codes_code ON access_codes(code);
+CREATE INDEX idx_access_codes_active ON access_codes(is_active);
+CREATE INDEX idx_access_code_sessions_user_id ON access_code_sessions(user_id);
+CREATE INDEX idx_access_code_sessions_access_code_id ON access_code_sessions(access_code_id);
+
+-- Enable Row Level Security for access codes
+ALTER TABLE access_codes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE access_code_sessions ENABLE ROW LEVEL SECURITY;
+
+-- Access codes policies (only service role can manage these)
+CREATE POLICY "Service role can manage access codes" ON access_codes
+  FOR ALL USING (auth.role() = 'service_role');
+
+-- Access code sessions policies
+CREATE POLICY "Users can view own access code sessions" ON access_code_sessions
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Service role can manage access code sessions" ON access_code_sessions
+  FOR ALL USING (auth.role() = 'service_role');
+
 -- Create function to automatically update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
