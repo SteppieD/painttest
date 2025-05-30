@@ -37,7 +37,7 @@ export function DashboardSidebar({ user, profile, projects }: DashboardSidebarPr
 
   const handleSignOut = async () => {
     await fetch('/api/auth/logout', { method: 'POST' })
-    router.push('/quotes/login')
+    router.push('/login')
     router.refresh()
   }
 

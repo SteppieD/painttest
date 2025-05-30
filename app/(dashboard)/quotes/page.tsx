@@ -11,7 +11,7 @@ export default async function QuotesPage() {
   const auth = await requireAuth()
   
   if (!auth) {
-    redirect('/quotes/login')
+    redirect('/login')
   }
 
   const { company } = auth

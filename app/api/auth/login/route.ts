@@ -22,10 +22,14 @@ export async function POST(request: NextRequest) {
         accessCode: company.accessCode
       }
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Login error:', error)
     return NextResponse.json(
-      { error: 'Authentication failed' },
+      { 
+        error: 'Authentication failed',
+        details: error.message,
+        code: error.code
+      },
       { status: 500 }
     )
   }

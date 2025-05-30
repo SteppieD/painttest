@@ -39,7 +39,7 @@ export default function LoginPage() {
       }
 
       // Success - redirect to dashboard
-      router.push('/quotes/dashboard')
+      router.push('/dashboard')
       router.refresh()
     } catch (error) {
       setError('Something went wrong. Please try again.')

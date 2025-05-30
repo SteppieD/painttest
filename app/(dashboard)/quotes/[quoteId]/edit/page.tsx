@@ -14,7 +14,7 @@ export default async function EditQuotePage({ params }: EditQuotePageProps) {
   const auth = await requireAuth()
   
   if (!auth) {
-    redirect('/quotes/login')
+    redirect('/login')
   }
 
   const { company } = auth

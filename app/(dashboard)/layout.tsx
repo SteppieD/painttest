@@ -12,7 +12,7 @@ export default async function DashboardLayout({
   const auth = await requireAuth()
   
   if (!auth) {
-    redirect('/quotes/login')
+    redirect('/login')
   }
 
   const { session, company } = auth

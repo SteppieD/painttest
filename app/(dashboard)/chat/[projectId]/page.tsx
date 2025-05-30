@@ -17,7 +17,7 @@ export default async function ChatPage({ params }: ChatPageProps) {
   const auth = await requireAuth()
   
   if (!auth) {
-    redirect('/quotes/login')
+    redirect('/login')
   }
 
   const { company } = auth
