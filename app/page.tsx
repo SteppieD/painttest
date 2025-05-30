@@ -1,12 +1,16 @@
 import { redirect } from 'next/navigation'
-import { requireAuth } from '@/lib/auth'
+import { getSession } from '@/lib/auth'
 
 export default async function Home() {
-  const auth = await requireAuth()
-
-  if (!auth) {
-    redirect('/quotes/login')
+  try {
+    const session = await getSession()
+    
+    if (session.isLoggedIn && session.companyId) {
+      redirect('/dashboard')
+    } else {
+      redirect('/login')
+    }
+  } catch (error) {
+    redirect('/login')
   }
-
-  redirect('/quotes/dashboard')
 }
