@@ -1,43 +1,30 @@
 import { db } from './database'
-import { getIronSession } from 'iron-session'
 import { cookies } from 'next/headers'
 
-export interface SessionData {
-  companyId: string
-  accessCode: string
-  companyName: string
-  isLoggedIn: boolean
-}
-
-const sessionOptions = {
-  password: process.env.SESSION_SECRET!,
-  cookieName: 'painting-quote-session',
-  cookieOptions: {
-    secure: process.env.NODE_ENV === 'production',
-    httpOnly: true,
-    maxAge: 60 * 60 * 24 * 30, // 30 days
-  },
-}
-
 export async function getSession() {
-  const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
-  return session
-}
-
-export async function generateAccessCode(): Promise<string> {
-  let code: string
-  let exists = true
+  const cookieStore = await cookies()
+  const companyId = cookieStore.get('companyId')?.value
   
-  // Generate unique 6-digit code
-  while (exists) {
-    code = Math.floor(100000 + Math.random() * 900000).toString()
-    const existing = await db.company.findUnique({
-      where: { accessCode: code }
-    })
-    exists = !!existing
+  if (!companyId) {
+    return { isLoggedIn: false, companyId: null }
   }
   
-  return code!
+  return { isLoggedIn: true, companyId }
+}
+
+export async function setSession(companyId: string) {
+  const cookieStore = await cookies()
+  cookieStore.set('companyId', companyId, {
+    httpOnly: true,
+    secure: true,
+    maxAge: 60 * 60 * 24 * 30, // 30 days
+    path: '/'
+  })
+}
+
+export async function clearSession() {
+  const cookieStore = await cookies()
+  cookieStore.delete('companyId')
 }
 
 export async function loginWithAccessCode(accessCode: string) {
@@ -67,46 +54,6 @@ export async function loginWithAccessCode(accessCode: string) {
     })
   }
   
-  // Create session
-  const session = await getSession()
-  session.companyId = company.id
-  session.accessCode = company.accessCode
-  session.companyName = company.name
-  session.isLoggedIn = true
-  await session.save()
-  
+  await setSession(company.id)
   return company
-}
-
-export async function logout() {
-  const session = await getSession()
-  session.destroy()
-}
-
-export async function requireAuth() {
-  const session = await getSession()
-  
-  if (!session.isLoggedIn || !session.companyId) {
-    return null
-  }
-  
-  // Verify company still exists
-  const company = await db.company.findUnique({
-    where: { id: session.companyId }
-  })
-  
-  if (!company) {
-    await logout()
-    return null
-  }
-  
-  return {
-    session,
-    company
-  }
-}
-
-export async function getCurrentCompany() {
-  const auth = await requireAuth()
-  return auth?.company || null
 }

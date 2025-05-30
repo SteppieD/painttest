@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
 
     if (!accessCode || accessCode.length !== 6) {
       return NextResponse.json(
-        { error: 'Invalid access code format' },
+        { error: 'Access code must be 6 digits' },
         { status: 400 }
       )
     }
@@ -26,9 +26,8 @@ export async function POST(request: NextRequest) {
     console.error('Login error:', error)
     return NextResponse.json(
       { 
-        error: 'Authentication failed',
-        details: error.message,
-        code: error.code
+        error: 'Login failed',
+        details: error.message
       },
       { status: 500 }
     )

@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSession } from '@/lib/auth'
 
 export async function middleware(request: NextRequest) {
   // Protected routes that require authentication
@@ -17,27 +16,19 @@ export async function middleware(request: NextRequest) {
   )
 
   if (isProtectedRoute) {
-    try {
-      const session = await getSession()
-      
-      if (!session.isLoggedIn || !session.companyId) {
-        return NextResponse.redirect(new URL('/login', request.url))
-      }
-    } catch (error) {
+    const companyId = request.cookies.get('companyId')?.value
+    
+    if (!companyId) {
       return NextResponse.redirect(new URL('/login', request.url))
     }
   }
 
   // Redirect authenticated users away from login page
   if (request.nextUrl.pathname === '/login') {
-    try {
-      const session = await getSession()
-      
-      if (session.isLoggedIn && session.companyId) {
-        return NextResponse.redirect(new URL('/dashboard', request.url))
-      }
-    } catch (error) {
-      // Continue to login page if session check fails
+    const companyId = request.cookies.get('companyId')?.value
+    
+    if (companyId) {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
     }
   }
 
