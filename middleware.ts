@@ -35,7 +35,11 @@ export async function middleware(request: NextRequest) {
   if (
     !user &&
     !request.nextUrl.pathname.startsWith('/login') &&
-    !request.nextUrl.pathname.startsWith('/auth')
+    !request.nextUrl.pathname.startsWith('/auth') &&
+    !request.nextUrl.pathname.startsWith('/test-quote') &&
+    !request.nextUrl.pathname.startsWith('/demo') &&
+    !request.nextUrl.pathname.startsWith('/demo-chat') &&
+    !request.nextUrl.pathname.startsWith('/test-components')
   ) {
     // no user, potentially respond by redirecting the user to the login page
     const url = request.nextUrl.clone()

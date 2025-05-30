@@ -10,12 +10,22 @@ import { Label } from '@/components/ui/label'
 import { useSupabase } from '@/app/providers'
 import { useToast } from '@/components/ui/use-toast'
 import type { PaintCosts } from '@/types/database'
+import LogoSettings from '@/components/settings/logo-settings'
 
 export default function SettingsPage() {
   const router = useRouter()
   const supabase = useSupabase()
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
+  
+  // User and Profile Info
+  const [user, setUser] = useState<{ id: string } | null>(null)
+  const [profile, setProfile] = useState<{
+    company_name: string | null
+    phone: string | null
+    logo_url: string | null
+    logo_storage_path: string | null
+  } | null>(null)
   
   // Company Info
   const [companyName, setCompanyName] = useState('')
@@ -32,29 +42,32 @@ export default function SettingsPage() {
 
   useEffect(() => {
     loadSettings()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const loadSettings = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    if (!authUser) return
+    setUser(authUser)
 
     // Load profile
-    const { data: profile } = await supabase
+    const { data: profileData } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', user.id)
+      .eq('id', authUser.id)
       .single()
 
-    if (profile) {
-      setCompanyName(profile.company_name || '')
-      setPhone(profile.phone || '')
+    if (profileData) {
+      setProfile(profileData)
+      setCompanyName(profileData.company_name || '')
+      setPhone(profileData.phone || '')
     }
 
     // Load cost settings
     const { data: costSettings } = await supabase
       .from('cost_settings')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', authUser.id)
       .single()
 
     if (costSettings) {
@@ -113,7 +126,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6 p-4 md:p-6 overflow-y-auto h-full pb-20">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
@@ -158,6 +171,13 @@ export default function SettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Logo Settings */}
+      <LogoSettings
+        userId={user?.id || ''}
+        currentLogo={profile?.logo_url}
+        logoStoragePath={profile?.logo_storage_path}
+      />
 
       {/* Cost Settings */}
       <Card>

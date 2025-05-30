@@ -21,8 +21,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   logo: {
-    width: 80,
-    height: 80,
+    width: 120,
+    height: 'auto',
+    maxHeight: 80,
+    objectFit: 'contain',
+    marginBottom: 10,
   },
   companyName: {
     fontSize: 18,
@@ -179,7 +182,14 @@ const QuotePDF = ({
         {/* Header with Company Info */}
         <View style={styles.header}>
           <View style={styles.companyInfo}>
-            {companyLogo && <Image style={styles.logo} src={companyLogo} />}
+            {companyLogo && (
+              <Image
+                style={styles.logo}
+                src={companyLogo}
+                cache={true}
+                // @react-pdf/renderer Image doesn't support alt attribute
+              />
+            )}
             <Text style={styles.companyName}>{companyName}</Text>
             <Text style={styles.contactInfo}>{userName}</Text>
             <Text style={styles.contactInfo}>{companyPhone}</Text>

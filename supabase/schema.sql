@@ -4,6 +4,8 @@ CREATE TABLE IF NOT EXISTS profiles (
   company_name TEXT,
   phone TEXT,
   business_info JSONB DEFAULT '{}',
+  logo_url TEXT,
+  logo_storage_path TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
 );
