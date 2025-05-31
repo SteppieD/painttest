@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { QuotePreview, QuoteData } from '@/components/quote-preview'
 import { useSupabase } from '@/app/providers'
 import { useToast } from '@/components/ui/use-toast'
 
-export default function TestQuotePage() {
+function TestQuoteContent() {
   const searchParams = useSearchParams()
   const supabase = useSupabase()
   const { toast } = useToast()
@@ -148,5 +148,22 @@ export default function TestQuotePage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function TestQuotePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="container mx-auto">
+          <h1 className="text-3xl font-bold text-center mb-8">Painting Quote</h1>
+          <div className="bg-white rounded-lg shadow p-8 text-center">
+            <p>Loading quote data...</p>
+          </div>
+        </div>
+      </div>
+    }>
+      <TestQuoteContent />
+    </Suspense>
   )
 }
