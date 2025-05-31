@@ -24,6 +24,17 @@ export default function AccessCodePage() {
     console.log('🎯 Form submitted with access code:', accessCode.trim().toUpperCase())
     setIsLoading(true)
 
+    // First, test basic connectivity
+    console.log('🌐 Testing connectivity...')
+    try {
+      const connectivityTest = await fetch('/api/health/access-code')
+      console.log('🌐 Connectivity test status:', connectivityTest.status)
+      const healthData = await connectivityTest.json()
+      console.log('🌐 Health check data:', healthData)
+    } catch (connectivityError) {
+      console.error('🌐 Connectivity test failed:', connectivityError)
+    }
+
     // Retry logic for server-side issues
     const maxRetries = 3
     let attempt = 0
@@ -34,17 +45,31 @@ export default function AccessCodePage() {
         attempt++
         console.log(`📡 Attempt ${attempt}/${maxRetries}: Making API request to /api/auth/access-code`)
         
-        const response = await fetch('/api/auth/access-code', {
+        const response = await fetch(`/api/auth/access-code?_=${Date.now()}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache',
           },
           body: JSON.stringify({ accessCode: accessCode.trim().toUpperCase() }),
         })
 
         console.log(`📡 Attempt ${attempt}: API response status:`, response.status)
-        data = await response.json()
-        console.log(`📡 Attempt ${attempt}: API response data:`, data)
+        console.log(`📡 Attempt ${attempt}: API response headers:`, Object.fromEntries(response.headers.entries()))
+        console.log(`📡 Attempt ${attempt}: API response ok:`, response.ok)
+        
+        // Get response text first to debug parsing issues
+        const responseText = await response.text()
+        console.log(`📡 Attempt ${attempt}: Raw response text:`, responseText)
+        
+        try {
+          data = JSON.parse(responseText)
+          console.log(`📡 Attempt ${attempt}: Parsed JSON data:`, data)
+        } catch (parseError) {
+          console.error(`📡 Attempt ${attempt}: JSON parse error:`, parseError)
+          console.log(`📡 Attempt ${attempt}: Response was not valid JSON, content:`, responseText)
+          throw new Error(`Invalid JSON response: ${responseText}`)
+        }
 
         if (!response.ok) {
           // If it's a 401 and we have retries left, wait and try again
