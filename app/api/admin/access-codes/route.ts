@@ -1,6 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
+// Force dynamic behavior to prevent build-time evaluation
+export const dynamic = 'force-dynamic'
+
 // GET - List all access codes
 export async function GET() {
   try {

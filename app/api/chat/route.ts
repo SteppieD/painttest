@@ -2,6 +2,9 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
+// Force dynamic behavior to prevent build-time evaluation
+export const dynamic = 'force-dynamic'
+
 // Initialize the Google Generative AI client lazily at runtime
 function initializeGenAI() {
   const apiKey = process.env.GEMINI_API_KEY
