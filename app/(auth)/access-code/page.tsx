@@ -51,8 +51,8 @@ export default function AccessCodePage() {
         description: `Logged in as ${data.companyName}`,
       })
 
-      // Redirect to demo dashboard instead of main dashboard
-      router.push('/demo')
+      // Redirect to dashboard
+      router.push('/dashboard')
     } catch (error: any) {
       console.error('Access code login error:', error)
       toast({

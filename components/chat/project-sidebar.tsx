@@ -45,29 +45,71 @@ export function ProjectSidebar({ currentProjectId, onProjectSelect, closeSidebar
 
   const loadUserAndProjects = async () => {
     try {
+      // Check for Supabase user first
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
       
-      setUser(user)
+      if (user) {
+        // Supabase authenticated user
+        setUser(user)
 
-      // Load user profile
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
-      
-      setProfile(profileData)
+        // Load user profile
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single()
+        
+        setProfile(profileData)
 
-      // Load projects
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('updated_at', { ascending: false })
+        // Load projects
+        const { data, error } = await supabase
+          .from('projects')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('updated_at', { ascending: false })
 
-      if (error) throw error
-      setProjects(data || [])
+        if (error) throw error
+        setProjects(data || [])
+      } else {
+        // Check for access code session
+        const sessionData = localStorage.getItem('paintquote_session')
+        if (sessionData) {
+          try {
+            const parsed = JSON.parse(sessionData)
+            if (Date.now() - parsed.loginTime < 24 * 60 * 60 * 1000) {
+              // Set demo user and profile for access code users
+              setUser({ 
+                id: parsed.userId, 
+                email: 'demo@paintquote.com' 
+              })
+              setProfile({ 
+                company_name: parsed.companyName,
+                logo_url: null
+              })
+              
+              // Set demo projects
+              setProjects([
+                {
+                  id: 'demo-1',
+                  client_name: 'Sarah Johnson',
+                  property_address: '123 Main Street, Anytown, USA',
+                  created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+                  updated_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+                },
+                {
+                  id: 'demo-2',
+                  client_name: 'Mike Wilson',
+                  property_address: '456 Oak Avenue, Springfield',
+                  created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+                  updated_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+                }
+              ])
+            }
+          } catch {
+            // Invalid session
+          }
+        }
+      }
     } catch (error) {
       console.error('Error loading user data and projects:', error)
     } finally {
@@ -76,8 +118,13 @@ export function ProjectSidebar({ currentProjectId, onProjectSelect, closeSidebar
   }
 
   const handleSignOut = async () => {
+    // Clear access code session if it exists
+    localStorage.removeItem('paintquote_session')
+    
+    // Sign out from Supabase if logged in
     await supabase.auth.signOut()
-    router.push('/login')
+    
+    router.push('/access-code')
   }
 
   const handleProjectSelect = (projectId: string) => {

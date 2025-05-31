@@ -68,10 +68,76 @@ export default function DashboardPage() {
     const fetchDashboardData = async () => {
       try {
         setIsLoading(true)
-        const { data: { user } } = await supabase.auth.getUser()
         
-        if (!user) {
-          router.push('/login')
+        // Check for Supabase user first
+        const { data: { user } } = await supabase.auth.getUser()
+        let userId = user?.id
+        
+        // If no Supabase user, check for access code session
+        if (!userId) {
+          const sessionData = localStorage.getItem('paintquote_session')
+          if (sessionData) {
+            try {
+              const parsed = JSON.parse(sessionData)
+              if (Date.now() - parsed.loginTime < 24 * 60 * 60 * 1000) {
+                // Use demo data for access code users instead of database queries
+                setStats({
+                  totalQuotes: 3,
+                  totalRevenue: 15650,
+                  averageQuoteValue: 5216.67,
+                  activeQuotes: 2,
+                  expiredQuotes: 1,
+                  quotesThisMonth: 2,
+                  revenueThisMonth: 10450
+                })
+                
+                setRecentQuotes([
+                  {
+                    id: 'demo-1',
+                    client_name: 'Sarah Johnson',
+                    property_address: '123 Main Street, Anytown, USA',
+                    final_price: 7475,
+                    created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+                    valid_until: new Date(Date.now() + 28 * 24 * 60 * 60 * 1000).toISOString(),
+                    status: 'active' as const
+                  },
+                  {
+                    id: 'demo-2',
+                    client_name: 'Mike Wilson',
+                    property_address: '456 Oak Avenue, Springfield',
+                    final_price: 3200,
+                    created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+                    valid_until: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000).toISOString(),
+                    status: 'active' as const
+                  },
+                  {
+                    id: 'demo-3',
+                    client_name: 'Jennifer Davis',
+                    property_address: '789 Pine Street, Riverside',
+                    final_price: 4975,
+                    created_at: new Date(Date.now() - 35 * 24 * 60 * 60 * 1000).toISOString(),
+                    valid_until: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+                    status: 'expired' as const
+                  }
+                ])
+                
+                setMonthlyData([
+                  { month: 'Sep 2024', quotes: 1, revenue: 4975 },
+                  { month: 'Oct 2024', quotes: 0, revenue: 0 },
+                  { month: 'Nov 2024', quotes: 1, revenue: 3200 },
+                  { month: 'Dec 2024', quotes: 0, revenue: 0 },
+                  { month: 'Jan 2025', quotes: 1, revenue: 7475 },
+                  { month: 'Feb 2025', quotes: 0, revenue: 0 }
+                ])
+                
+                setIsLoading(false)
+                return
+              }
+            } catch {
+              // Invalid session
+            }
+          }
+          router.push('/access-code')
           return
         }
 
