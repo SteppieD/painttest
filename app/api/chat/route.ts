@@ -2,21 +2,22 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
-// Ensure the API key is properly loaded from environment variables
-const apiKey = process.env.GEMINI_API_KEY
-if (!apiKey) {
-  console.error('GEMINI_API_KEY is not set in environment variables')
-  throw new Error('Missing GEMINI_API_KEY environment variable')
-}
+// Initialize the Google Generative AI client lazily at runtime
+function initializeGenAI() {
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) {
+    console.error('GEMINI_API_KEY is not set in environment variables')
+    throw new Error('Missing GEMINI_API_KEY environment variable')
+  }
 
-// Initialize the Google Generative AI client with proper error handling
-let genAI: any
-try {
-  genAI = new GoogleGenerativeAI(apiKey)
-  console.log('Gemini API initialized successfully')
-} catch (error) {
-  console.error('Failed to initialize Gemini API:', error)
-  throw new Error('Failed to initialize Gemini API')
+  try {
+    const genAI = new GoogleGenerativeAI(apiKey)
+    console.log('Gemini API initialized successfully')
+    return genAI
+  } catch (error) {
+    console.error('Failed to initialize Gemini API:', error)
+    throw new Error('Failed to initialize Gemini API')
+  }
 }
 
 // Import calculation utilities
@@ -35,6 +36,7 @@ export async function POST(request: NextRequest) {
     // Initialize Gemini model with error handling
     let model
     try {
+      const genAI = initializeGenAI()
       model = genAI.getGenerativeModel({ 
         model: 'gemini-1.5-flash',
         generationConfig: {
