@@ -38,14 +38,21 @@ export default function AccessCodePage() {
         throw new Error(data.error || 'Invalid access code')
       }
 
-      // Success! The API endpoint handles the authentication
+      // Success! Store session data in localStorage
+      localStorage.setItem('paintquote_session', JSON.stringify({
+        userId: data.userId,
+        sessionToken: data.sessionToken,
+        companyName: data.companyName,
+        loginTime: Date.now()
+      }))
+      
       toast({
         title: 'Welcome!',
         description: `Logged in as ${data.companyName}`,
       })
 
-      // Redirect to dashboard
-      router.push('/dashboard')
+      // Redirect to demo dashboard instead of main dashboard
+      router.push('/demo')
     } catch (error: any) {
       console.error('Access code login error:', error)
       toast({
@@ -100,13 +107,7 @@ export default function AccessCodePage() {
           
           <div className="mt-6 text-center">
             <p className="text-sm text-muted-foreground">
-              Don&apos;t have an access code?{' '}
-              <button
-                onClick={() => router.push('/login')}
-                className="text-blue-600 hover:underline"
-              >
-                Sign in with Google
-              </button>
+              Need an access code? Contact your administrator.
             </p>
           </div>
         </CardContent>
