@@ -1,0 +1,27 @@
+modules = ["nodejs-20"]
+
+[nix]
+channel = "stable-24_05"
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.dev"
+
+[workflows.workflow.tasks.preview]
+port = 3000
+
+[deployment]
+run = ["sh", "-c", "npm run build && npm start"]
+deploymentTarget = "cloudrun"
+ignorePorts = false
+
+[[ports]]
+localPort = 3000
+externalPort = 80
