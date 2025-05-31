@@ -17,6 +17,8 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient()
 
+    console.log('Looking for access code:', accessCode.toUpperCase())
+
     // Check if access code exists and is valid
     const { data: accessCodeData, error: codeError } = await supabase
       .from('access_codes')
@@ -25,7 +27,10 @@ export async function POST(request: NextRequest) {
       .eq('is_active', true)
       .single()
 
+    console.log('Access code query result:', { accessCodeData, codeError })
+
     if (codeError || !accessCodeData) {
+      console.log('Access code not found or error:', codeError)
       return NextResponse.json(
         { error: 'Invalid or expired access code' },
         { status: 401 }
