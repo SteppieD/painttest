@@ -51,6 +51,9 @@ interface MonthlyData {
 export default function DashboardPage() {
   const router = useRouter()
   const supabase = useSupabase()
+  
+  // Debug log to see if dashboard page is reached
+  console.log('🏠 Dashboard page loaded')
   const [stats, setStats] = useState<DashboardStats>({
     totalQuotes: 0,
     totalRevenue: 0,

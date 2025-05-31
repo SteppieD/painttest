@@ -39,20 +39,39 @@ export default function AccessCodePage() {
       }
 
       // Success! Store session data in localStorage
-      localStorage.setItem('paintquote_session', JSON.stringify({
+      const sessionData = {
         userId: data.userId,
         sessionToken: data.sessionToken,
         companyName: data.companyName,
         loginTime: Date.now()
-      }))
+      }
+      
+      console.log('🔑 Access code success, storing session:', sessionData)
+      localStorage.setItem('paintquote_session', JSON.stringify(sessionData))
+      
+      // Verify storage worked
+      const stored = localStorage.getItem('paintquote_session')
+      console.log('💾 Session stored successfully:', !!stored)
       
       toast({
         title: 'Welcome!',
         description: `Logged in as ${data.companyName}`,
       })
 
-      // Redirect to dashboard
-      router.push('/dashboard')
+      console.log('🚀 Redirecting to dashboard...')
+      // Small delay to ensure localStorage is fully written
+      setTimeout(() => {
+        console.log('📍 Attempting router.push to /dashboard')
+        router.push('/dashboard')
+        
+        // Fallback redirect in case router.push fails
+        setTimeout(() => {
+          console.log('🔄 Fallback redirect using window.location')
+          if (window.location.pathname === '/access-code') {
+            window.location.href = '/dashboard'
+          }
+        }, 500)
+      }, 100)
     } catch (error: any) {
       console.error('Access code login error:', error)
       toast({

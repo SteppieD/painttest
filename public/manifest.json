@@ -2,7 +2,7 @@
   "name": "PaintQuote Pro - Professional Painting Estimates",
   "short_name": "PaintQuote Pro", 
   "description": "AI-powered painting quote generator for professional contractors",
-  "start_url": "/dashboard?v=2",
+  "start_url": "/dashboard?v=3",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#2563eb",
