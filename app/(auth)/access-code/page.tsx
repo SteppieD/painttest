@@ -21,9 +21,11 @@ export default function AccessCodePage() {
     e.preventDefault()
     if (!accessCode.trim()) return
 
+    console.log('🎯 Form submitted with access code:', accessCode.trim().toUpperCase())
     setIsLoading(true)
 
     try {
+      console.log('📡 Making API request to /api/auth/access-code')
       const response = await fetch('/api/auth/access-code', {
         method: 'POST',
         headers: {
@@ -32,7 +34,9 @@ export default function AccessCodePage() {
         body: JSON.stringify({ accessCode: accessCode.trim().toUpperCase() }),
       })
 
+      console.log('📡 API response status:', response.status)
       const data = await response.json()
+      console.log('📡 API response data:', data)
 
       if (!response.ok) {
         throw new Error(data.error || 'Invalid access code')
@@ -53,25 +57,15 @@ export default function AccessCodePage() {
       const stored = localStorage.getItem('paintquote_session')
       console.log('💾 Session stored successfully:', !!stored)
       
-      toast({
-        title: 'Welcome!',
-        description: `Logged in as ${data.companyName}`,
-      })
-
-      console.log('🚀 Redirecting to dashboard...')
-      // Small delay to ensure localStorage is fully written
-      setTimeout(() => {
-        console.log('📍 Attempting router.push to /dashboard')
-        router.push('/dashboard')
-        
-        // Fallback redirect in case router.push fails
-        setTimeout(() => {
-          console.log('🔄 Fallback redirect using window.location')
-          if (window.location.pathname === '/access-code') {
-            window.location.href = '/dashboard'
-          }
-        }, 500)
-      }, 100)
+      // IMMEDIATE redirect without waiting for toast
+      console.log('🚀 Immediate redirect to dashboard...')
+      try {
+        window.location.href = '/dashboard'
+      } catch (redirectError) {
+        console.error('❌ Redirect failed:', redirectError)
+        // Try alternative redirect
+        window.location.replace('/dashboard')
+      }
     } catch (error: any) {
       console.error('Access code login error:', error)
       toast({
