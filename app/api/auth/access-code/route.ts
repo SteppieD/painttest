@@ -53,82 +53,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create a demo user account or sign them in
-    const { data: authData, error: authError } = await supabase.auth.signInAnonymously({
-      options: {
-        data: {
-          access_code_id: accessCodeData.id,
-          company_name: accessCodeData.company_name,
-          is_demo: true
-        }
-      }
-    })
-
-    if (authError || !authData.user) {
-      console.error('Auth error:', authError)
-      return NextResponse.json(
-        { error: 'Failed to create demo session' },
-        { status: 500 }
-      )
-    }
-
-    // Create or update user profile
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .upsert({
-        id: authData.user.id,
-        company_name: accessCodeData.company_name,
-        phone: accessCodeData.phone,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
-
-    if (profileError) {
-      console.error('Profile error:', profileError)
-      // Don't fail the request for profile errors
-    }
-
-    // Create default cost settings
-    const { error: costError } = await supabase
-      .from('cost_settings')
-      .upsert({
-        user_id: authData.user.id,
-        labor_cost_per_hour: 25,
-        paint_costs: { good: 25, better: 35, best: 50 },
-        supplies_base_cost: 100,
-        company_name: accessCodeData.company_name,
-        contact_name: accessCodeData.contact_name,
-        default_labor_percentage: 30,
-        default_spread_rate: 350,
-        door_trim_pricing: { door_unit_price: 45, trim_linear_foot_price: 3 },
-        baseboard_pricing: { charge_method: 'linear_foot', price_per_linear_foot: 2.5 },
-        default_rates: { walls: 3.00, ceilings: 2.00, trim_doors: 5.00 },
-        default_paint_costs: { walls: 26, ceilings: 25, trim_doors: 35 },
-        updated_at: new Date().toISOString()
-      })
-
-    if (costError) {
-      console.error('Cost settings error:', costError)
-      // Don't fail the request for cost settings errors
-    }
-
-    // Record the access code session
-    const { error: sessionError } = await supabase
-      .from('access_code_sessions')
-      .insert({
-        access_code_id: accessCodeData.id,
-        user_id: authData.user.id,
-        session_data: {
-          user_agent: request.headers.get('user-agent'),
-          ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip')
-        }
-      })
-
-    if (sessionError) {
-      console.error('Session recording error:', sessionError)
-      // Don't fail the request for session recording errors
-    }
-
+    // Generate a simple session ID instead of using Supabase auth
+    const sessionId = `demo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    
     // Update access code usage count and last used timestamp
     const { error: updateError } = await supabase
       .from('access_codes')
@@ -143,10 +70,28 @@ export async function POST(request: NextRequest) {
       // Don't fail the request for usage tracking errors
     }
 
+    // Record the access code session (optional)
+    try {
+      await supabase
+        .from('access_code_sessions')
+        .insert({
+          access_code_id: accessCodeData.id,
+          user_id: sessionId,
+          session_data: {
+            user_agent: request.headers.get('user-agent'),
+            ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip')
+          }
+        })
+    } catch (sessionError) {
+      console.error('Session recording error:', sessionError)
+      // Don't fail the request for session recording errors
+    }
+
     return NextResponse.json({
       success: true,
       companyName: accessCodeData.company_name,
-      userId: authData.user.id
+      userId: sessionId,
+      sessionToken: sessionId
     })
 
   } catch (error) {
