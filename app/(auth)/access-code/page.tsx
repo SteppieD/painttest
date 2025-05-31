@@ -24,24 +24,56 @@ export default function AccessCodePage() {
     console.log('🎯 Form submitted with access code:', accessCode.trim().toUpperCase())
     setIsLoading(true)
 
-    try {
-      console.log('📡 Making API request to /api/auth/access-code')
-      const response = await fetch('/api/auth/access-code', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ accessCode: accessCode.trim().toUpperCase() }),
-      })
+    // Retry logic for server-side issues
+    const maxRetries = 3
+    let attempt = 0
+    let data: any
 
-      console.log('📡 API response status:', response.status)
-      const data = await response.json()
-      console.log('📡 API response data:', data)
+    while (attempt < maxRetries) {
+      try {
+        attempt++
+        console.log(`📡 Attempt ${attempt}/${maxRetries}: Making API request to /api/auth/access-code`)
+        
+        const response = await fetch('/api/auth/access-code', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ accessCode: accessCode.trim().toUpperCase() }),
+        })
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Invalid access code')
+        console.log(`📡 Attempt ${attempt}: API response status:`, response.status)
+        data = await response.json()
+        console.log(`📡 Attempt ${attempt}: API response data:`, data)
+
+        if (!response.ok) {
+          // If it's a 401 and we have retries left, wait and try again
+          if (response.status === 401 && attempt < maxRetries) {
+            console.log(`⏳ Attempt ${attempt} failed with 401, retrying in ${attempt * 1000}ms...`)
+            await new Promise(resolve => setTimeout(resolve, attempt * 1000))
+            continue
+          }
+          throw new Error(data.error || 'Invalid access code')
+        }
+
+        // Success! Break out of retry loop
+        console.log(`✅ Success on attempt ${attempt}`)
+        break
+      } catch (error: any) {
+        console.log(`❌ Attempt ${attempt} failed:`, error.message)
+        
+        // If this was the last attempt, throw the error
+        if (attempt >= maxRetries) {
+          throw error
+        }
+        
+        // Wait before retrying (exponential backoff)
+        console.log(`⏳ Waiting ${attempt * 1000}ms before retry...`)
+        await new Promise(resolve => setTimeout(resolve, attempt * 1000))
       }
+    }
 
+    try {
       // Success! Store session data in localStorage
       const sessionData = {
         userId: data.userId,
