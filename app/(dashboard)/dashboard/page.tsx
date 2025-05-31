@@ -71,10 +71,9 @@ export default function DashboardPage() {
         
         // Check for Supabase user first
         const { data: { user } } = await supabase.auth.getUser()
-        let userId = user?.id
         
         // If no Supabase user, check for access code session
-        if (!userId) {
+        if (!user) {
           const sessionData = localStorage.getItem('paintquote_session')
           if (sessionData) {
             try {

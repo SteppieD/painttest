@@ -184,11 +184,11 @@ const QuotePDF = ({
         <View style={styles.header}>
           <View style={styles.companyInfo}>
             {companyLogo && (
+              // eslint-disable-next-line jsx-a11y/alt-text
               <Image
                 style={styles.logo}
                 src={companyLogo}
                 cache={true}
-                // @react-pdf/renderer Image doesn't support alt attribute
               />
             )}
             <Text style={styles.companyName}>{companyName}</Text>
